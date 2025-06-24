@@ -1,0 +1,97 @@
+---
+# =============================================================================
+# Ansible Role: WireGuard Mesh - System Prerequisites
+# =============================================================================
+# This file contains tasks for verifying and preparing system prerequisites
+# before WireGuard installation. It ensures the system meets all requirements
+# for successful deployment.
+#
+# Flow:
+# 1. Directory Structure Preparation
+# 2. System Service Validation
+# 3. Network Interface Checks
+# 4. Kernel Module Verification (skip in test containers)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Directory Structure Preparation
+# -----------------------------------------------------------------------------
+- name: WireGuard | prerequisites | Update package cache
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+  tags:
+    - packages
+
+- name: WireGuard | prerequisites | Ensure configuration directory exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ wireguard_config_dir }}"
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+
+# -----------------------------------------------------------------------------
+# 2. System Service Validation
+# -----------------------------------------------------------------------------
+- name: 🔍 WireGuard | prerequisites | Check kernel version
+  ansible.builtin.command: uname -r
+  register: kernel_version
+  changed_when: false
+
+- name: 🧪 WireGuard | prerequisites | Verify kernel compatibility
+  ansible.builtin.assert:
+    that:
+      - ansible_kernel is version('5.6', '>=')
+    fail_msg: "❌ Kernel version {{ ansible_kernel }} is too old for WireGuard. Minimum required: 5.6"
+    success_msg: "✅ Kernel version {{ ansible_kernel }} is compatible with WireGuard"
+
+# -----------------------------------------------------------------------------
+# 3. Network Interface Checks
+# -----------------------------------------------------------------------------
+- name: WireGuard | prerequisites | Enable IP forwarding
+  become: true
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    state: present
+    sysctl_set: true
+    reload: true
+  when: >
+    wireguard_enable_ip_forwarding | bool and
+    not (wireguard_molecule_test_mode | default(false))
+
+- name: 🧪 WireGuard | prerequisites | Skip IP forwarding in test environment
+  ansible.builtin.debug:
+    msg: "⚠️ Skipping IP forwarding configuration in test container environment"
+  when: >
+    wireguard_enable_ip_forwarding | bool and
+    wireguard_molecule_test_mode | default(false)
+
+# -----------------------------------------------------------------------------
+# 4. Kernel Module Verification (skip in test containers)
+# -----------------------------------------------------------------------------
+- name: 🔍 WireGuard | prerequisites | Check WireGuard kernel module availability
+  become: true
+  community.general.modprobe:
+    name: wireguard
+    state: present
+  ignore_errors: true
+  register: wireguard_module_check
+  when: >
+    not (wireguard_molecule_test_mode | default(false))
+
+- name: ⚠️ WireGuard | prerequisites | Module availability notice
+  ansible.builtin.debug:
+    msg: "⚠️ WireGuard kernel module not yet available - will be loaded after package installation"
+  when: >
+    wireguard_module_check is failed and
+    not (wireguard_molecule_test_mode | default(false))
+
+- name: 🧪 WireGuard | prerequisites | Skip kernel module check in test environment
+  ansible.builtin.debug:
+    msg: "⚠️ Skipping WireGuard kernel module verification in test container environment"
+  when: >
+    wireguard_molecule_test_mode | default(false)

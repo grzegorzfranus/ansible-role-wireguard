@@ -1,0 +1,42 @@
+---
+# =============================================================================
+# Ansible Role: WireGuard Mesh - Metadata
+# =============================================================================
+
+galaxy_info:
+  role_name: wireguard
+  author: Grzegorz Franus
+  namespace: grzegorzfranus
+  description: |
+    Configures WireGuard mesh VPN between Ubuntu and Debian servers with secure mesh networking.
+    Creates a full mesh network topology with automatic peer discovery and
+    comprehensive logging.
+
+  license: Apache-2.0
+  company: EWARE
+  min_ansible_version: "2.15"
+
+  platforms:
+    - name: Ubuntu
+      versions:
+        - "jammy"   # Ubuntu 22.04 LTS
+        - "noble"   # Ubuntu 24.04 LTS
+    - name: Debian
+      versions:
+        - "bookworm"  # Debian 12
+
+  galaxy_tags:
+    - networking
+    - vpn
+    - wireguard
+    - mesh
+    - security
+    - ubuntu
+    - debian
+    - logging
+
+dependencies: []
+
+collections:
+  - ansible.posix
+  - community.general

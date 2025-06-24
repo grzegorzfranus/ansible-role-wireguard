@@ -1,0 +1,36 @@
+---
+# =============================================================================
+# Ansible Role: WireGuard Mesh - Debian 12 Variables
+# =============================================================================
+# OS-specific variables for Debian 12 (Bookworm).
+# These variables define packages, paths, and configurations specific
+# to this operating system version.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Package Configuration
+# -----------------------------------------------------------------------------
+# WireGuard packages for Debian 12
+wireguard_packages:
+  - wireguard
+  - wireguard-tools
+
+# -----------------------------------------------------------------------------
+# Service Configuration
+# -----------------------------------------------------------------------------
+# Service name for WireGuard on Debian 12
+wireguard_service_name: "wg-quick@{{ wireguard_interface }}"
+
+# -----------------------------------------------------------------------------
+# Logging Configuration
+# -----------------------------------------------------------------------------
+# Syslog user and group for Debian 12
+# Note: Debian uses root:root for log file ownership as syslog user may not exist
+wireguard_log_user: "root"
+wireguard_log_group: "root"
+
+# -----------------------------------------------------------------------------
+# System Requirements
+# -----------------------------------------------------------------------------
+# Minimum kernel version for WireGuard on Debian 12
+wireguard_minimum_kernel_version: "6.1"

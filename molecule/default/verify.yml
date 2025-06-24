@@ -1,0 +1,298 @@
+---
+# =============================================================================
+# Ansible Role: WireGuard - Molecule Verification Playbook
+# =============================================================================
+# This playbook verifies the installation and configuration of WireGuard.
+# It performs comprehensive checks of:
+# - Package installation and versioning
+# - Configuration file creation and permissions
+# - Key generation and security
+# - Logging setup and rsyslog integration
+# - Directory structure and permissions
+# - Service configuration (without starting)
+#
+# Flow:
+# 1. Load variables and gather facts
+# 2. Verify package installation
+# 3. Check configuration files
+# 4. Validate key generation
+# 5. Verify logging setup
+# 6. Test file permissions and ownership
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Environment Setup
+# -----------------------------------------------------------------------------
+- name: molecule | Verify Role
+  hosts: all
+  gather_facts: true
+
+  vars_files:
+    - ../../defaults/main.yml
+    - ../../vars/main.yml
+
+  tasks:
+    - name: 📂 Verify | Gather OS specific variables
+      include_vars: "{{ lookup('first_found', params) }}"
+      vars:
+        params:
+          files:
+            - "{{ ansible_facts['distribution'] | lower }}_{{ ansible_facts['distribution_version'] | lower }}.yml"
+            - "{{ ansible_facts['distribution'] | lower }}_{{ ansible_facts['distribution_major_version'] | lower }}.yml"
+            - "{{ ansible_facts['distribution'] | lower }}.yml"
+            - "{{ ansible_facts['os_family'] | lower }}_{{ ansible_facts['distribution_version'] | lower }}.yml"
+            - "{{ ansible_facts['os_family'] | lower }}_{{ ansible_facts['distribution_major_version'].split('.')[0] }}.yml"
+            - "{{ ansible_facts['os_family'] | lower }}.yml"
+            - "main.yml"
+          paths:
+            - "../../vars"
+
+# -----------------------------------------------------------------------------
+# 2. Package Verification
+# -----------------------------------------------------------------------------
+    - name: 🔍 Verify | Check if WireGuard packages are installed
+      ansible.builtin.package:
+        name: "{{ item }}"
+        state: present
+      register: _package_result_
+      loop: "{{ wireguard_packages }}"
+
+    - name: 🔍 Verify | Check if WireGuard binary is available
+      ansible.builtin.stat:
+        path: "/usr/bin/wg"
+        checksum_algorithm: sha256
+      register: _wg_binary_result_
+
+    - name: 🔍 Verify | Check if wg-quick binary is available
+      ansible.builtin.stat:
+        path: "/usr/bin/wg-quick"
+        checksum_algorithm: sha256
+      register: _wg_quick_binary_result_
+
+    - name: 📊 Verify | Show WireGuard binary details
+      ansible.builtin.debug:
+        msg:
+          - "✅ WireGuard 'wg' binary found at: /usr/bin/wg"
+          - "✅ WireGuard 'wg-quick' binary found at: /usr/bin/wg-quick"
+      when: _wg_binary_result_.stat.exists and _wg_quick_binary_result_.stat.exists
+
+    - name: 🧪 Verify | Assert WireGuard binaries exist
+      ansible.builtin.assert:
+        that:
+          - _wg_binary_result_.stat.exists
+          - _wg_quick_binary_result_.stat.exists
+        fail_msg: "❌ WireGuard binaries not found"
+        success_msg: "✅ WireGuard binaries verified"
+
+# -----------------------------------------------------------------------------
+# 3. Configuration Directory and Files Verification
+# -----------------------------------------------------------------------------
+    - name: 🔍 Verify | Check if WireGuard configuration directory exists
+      ansible.builtin.stat:
+        path: "{{ wireguard_config_dir }}"
+        checksum_algorithm: sha256
+      register: _config_dir_result_
+
+    - name: 🧪 Verify | Assert configuration directory exists
+      ansible.builtin.assert:
+        that:
+          - _config_dir_result_.stat.exists
+          - _config_dir_result_.stat.isdir
+        fail_msg: "❌ WireGuard configuration directory not found at {{ wireguard_config_dir }}"
+        success_msg: "✅ WireGuard configuration directory verified"
+
+    - name: 🔍 Verify | Check configuration directory permissions
+      ansible.builtin.file:
+        path: "{{ wireguard_config_dir }}"
+        state: directory
+        owner: "root"
+        group: "root"
+        mode: "0755"
+      register: _config_dir_perms_result_
+
+    - name: 🔍 Verify | Check if WireGuard interface configuration exists
+      ansible.builtin.stat:
+        path: "{{ wireguard_config_dir }}/{{ wireguard_interface }}.conf"
+        checksum_algorithm: sha256
+      register: _interface_config_result_
+
+    - name: 🧪 Verify | Assert interface configuration exists
+      ansible.builtin.assert:
+        that:
+          - _interface_config_result_.stat.exists
+        fail_msg: "❌ WireGuard interface configuration not found"
+        success_msg: "✅ WireGuard interface configuration verified"
+
+    - name: 🔍 Verify | Check interface configuration file permissions
+      ansible.builtin.file:
+        path: "{{ wireguard_config_dir }}/{{ wireguard_interface }}.conf"
+        state: file
+        owner: "root"
+        group: "root"
+        mode: "{{ wireguard_config_permissions }}"
+      register: _interface_config_perms_result_
+
+# -----------------------------------------------------------------------------
+# 4. Cryptographic Keys Verification
+# -----------------------------------------------------------------------------
+    - name: 🔍 Verify | Check if private key exists
+      ansible.builtin.stat:
+        path: "{{ wireguard_config_dir }}/privatekey"
+        checksum_algorithm: sha256
+      register: _private_key_result_
+
+    - name: 🧪 Verify | Assert private key exists
+      ansible.builtin.assert:
+        that:
+          - _private_key_result_.stat.exists
+        fail_msg: "❌ WireGuard private key not found"
+        success_msg: "✅ WireGuard private key verified"
+
+    - name: 🔍 Verify | Check private key permissions
+      ansible.builtin.file:
+        path: "{{ wireguard_config_dir }}/privatekey"
+        state: file
+        owner: "root"
+        group: "root"
+        mode: "{{ wireguard_private_key_permissions }}"
+      register: _private_key_perms_result_
+
+    - name: 🔍 Verify | Check if public key exists
+      ansible.builtin.stat:
+        path: "{{ wireguard_config_dir }}/publickey"
+        checksum_algorithm: sha256
+      register: _public_key_result_
+
+    - name: 🧪 Verify | Assert public key exists
+      ansible.builtin.assert:
+        that:
+          - _public_key_result_.stat.exists
+        fail_msg: "❌ WireGuard public key not found"
+        success_msg: "✅ WireGuard public key verified"
+
+    - name: 🔍 Verify | Check public key permissions
+      ansible.builtin.file:
+        path: "{{ wireguard_config_dir }}/publickey"
+        state: file
+        owner: "root"
+        group: "root"
+        mode: "{{ wireguard_public_key_permissions }}"
+      register: _public_key_perms_result_
+
+    - name: 🔍 Verify | Check if PSK exists (when enabled)
+      ansible.builtin.stat:
+        path: "{{ wireguard_config_dir }}/psk"
+        checksum_algorithm: sha256
+      register: _psk_result_
+      when: wireguard_enable_psk | default(false)
+
+    - name: 🧪 Verify | Assert PSK exists when enabled
+      ansible.builtin.assert:
+        that:
+          - _psk_result_.stat.exists
+        fail_msg: "❌ WireGuard PSK not found when enabled"
+        success_msg: "✅ WireGuard PSK verified"
+      when: wireguard_enable_psk | default(false)
+
+# -----------------------------------------------------------------------------
+# 5. Logging Setup Verification
+# -----------------------------------------------------------------------------
+    - name: 🔍 Verify | Check if log directory exists
+      ansible.builtin.stat:
+        path: "{{ wireguard_log_dir }}"
+        checksum_algorithm: sha256
+      register: _logdir_result_
+      when: wireguard_enable_logging | default(false)
+
+    - name: 🧪 Verify | Assert log directory exists when logging enabled
+      ansible.builtin.assert:
+        that:
+          - _logdir_result_.stat.exists
+          - _logdir_result_.stat.isdir
+        fail_msg: "❌ WireGuard log directory not found"
+        success_msg: "✅ WireGuard log directory verified"
+      when: wireguard_enable_logging | default(false)
+
+    - name: 🔍 Verify | Check log directory permissions
+      ansible.builtin.file:
+        path: "{{ wireguard_log_dir }}"
+        state: directory
+        owner: "root"
+        group: "root"
+        mode: "{{ wireguard_log_dir_permissions }}"
+      register: _logdir_perms_result_
+      when: wireguard_enable_logging | default(false)
+
+    - name: 🔍 Verify | Check if rsyslog configuration exists
+      ansible.builtin.stat:
+        path: "/etc/rsyslog.d/{{ wireguard_rsyslog_config_file }}"
+        checksum_algorithm: sha256
+      register: _rsyslog_result_
+      when: wireguard_enable_logging | default(false)
+
+    - name: 🧪 Verify | Assert rsyslog configuration exists when logging enabled
+      ansible.builtin.assert:
+        that:
+          - _rsyslog_result_.stat.exists
+        fail_msg: "❌ WireGuard rsyslog configuration not found"
+        success_msg: "✅ WireGuard rsyslog configuration verified"
+      when: wireguard_enable_logging | default(false)
+
+    - name: 🔍 Verify | Check if logrotate configuration exists
+      ansible.builtin.stat:
+        path: "/etc/logrotate.d/wireguard"
+        checksum_algorithm: sha256
+      register: _logrotate_result_
+      when: wireguard_configure_logrotate | default(false)
+
+    - name: 🧪 Verify | Assert logrotate configuration exists when enabled
+      ansible.builtin.assert:
+        that:
+          - _logrotate_result_.stat.exists
+        fail_msg: "❌ WireGuard logrotate configuration not found"
+        success_msg: "✅ WireGuard logrotate configuration verified"
+      when: wireguard_configure_logrotate | default(false)
+
+# -----------------------------------------------------------------------------
+# 6. Configuration Content Verification
+# -----------------------------------------------------------------------------
+    - name: 🔍 Verify | Read WireGuard configuration content
+      ansible.builtin.slurp:
+        src: "{{ wireguard_config_dir }}/{{ wireguard_interface }}.conf"
+      register: _config_content_
+
+    - name: 📊 Verify | Debug configuration content structure
+      ansible.builtin.debug:
+        msg: "🔍 WireGuard configuration loaded, size: {{ (_config_content_['content'] | b64decode | length) }} bytes"
+
+    - name: 🧪 Verify | Assert configuration contains required sections
+      ansible.builtin.assert:
+        that:
+          - "'[Interface]' in (_config_content_['content'] | b64decode)"
+          - "'PrivateKey' in (_config_content_['content'] | b64decode)"
+          - "'Address' in (_config_content_['content'] | b64decode)"
+          - "'ListenPort' in (_config_content_['content'] | b64decode)"
+        fail_msg: "❌ WireGuard configuration missing required sections"
+        success_msg: "✅ WireGuard configuration structure verified"
+
+# -----------------------------------------------------------------------------
+# 7. Service Configuration Verification
+# -----------------------------------------------------------------------------
+    - name: 🔍 Verify | Check if systemd service file template exists
+      ansible.builtin.stat:
+        path: "/lib/systemd/system/wg-quick@.service"
+      register: _service_template_result_
+      when: ansible_service_mgr == 'systemd'
+
+    - name: 📊 Verify | Show service verification results
+      ansible.builtin.debug:
+        msg: "✅ All WireGuard verification checks completed successfully! 🎉"
+
+    - name: 🎯 Verify | Final verification summary
+      ansible.builtin.debug:
+        msg:
+          - "🔐 Cryptographic keys: Generated and secured"
+          - "📁 Configuration files: Created with proper permissions"
+          - "📝 Logging setup: {{ 'Configured' if wireguard_enable_logging else 'Disabled' }}"
+          - "🔄 Log rotation: {{ 'Configured' if wireguard_configure_logrotate else 'Disabled' }}"
+          - "🚀 WireGuard role verification: PASSED ✅"

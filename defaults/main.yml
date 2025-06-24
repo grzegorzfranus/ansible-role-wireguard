@@ -1,0 +1,215 @@
+---
+# =============================================================================
+# Ansible Role: WireGuard Mesh - Default Variables
+# =============================================================================
+# This file defines default configuration values for WireGuard mesh VPN.
+# These values can be overridden by setting them in your playbook or inventory.
+#
+# SECURITY PRIORITY: This configuration focuses on creating secure mesh VPN
+# connections between supported Ubuntu and Debian servers. Manual iptables
+# configuration is required for firewall rules.
+#
+# Sections:
+#   1. General Settings
+#   2. Network Configuration
+#   3. Interface Settings
+#   4. Security Settings
+#   5. Service Settings
+#   6. Logging Configuration
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. General Settings
+# -----------------------------------------------------------------------------
+# Role execution control and basic service configuration.
+
+# Define which parts of the role to execute (Options: 'all', 'install', 'config')
+# - 'all': Execute complete role (install packages + configure + start service)
+# - 'install': Only install WireGuard packages and dependencies
+# - 'config': Only configure WireGuard (assumes packages already installed)
+wireguard_role_action: "all"
+
+# Enable/disable WireGuard service on boot
+# Set to false if you want to manage service manually
+wireguard_service_enabled: true
+
+# WireGuard interface name (must match systemd service naming)
+# Standard convention is 'wg0', 'wg1', etc.
+wireguard_interface: "wg0"
+
+# Inventory group name containing all mesh peers
+# All hosts in this group will form a full mesh VPN network
+wireguard_inventory_group: "wireguardservers"
+
+# -----------------------------------------------------------------------------
+# 2. Network Configuration
+# -----------------------------------------------------------------------------
+# Network topology and addressing for the mesh VPN.
+
+# Base subnet for the WireGuard mesh network
+# Each server automatically gets sequential IP addresses:
+# First server: 10.0.0.1, Second: 10.0.0.2, Third: 10.0.0.3, etc.
+# Supports any number of servers within the subnet range
+wireguard_network_base: "10.0.0.0/24"
+wireguard_network_prefix: "10.0.0"
+
+# UDP port for WireGuard to listen on
+# Default 51820 is standard, change if port conflicts exist
+# Range: 1024-65535 (avoid well-known ports below 1024)
+wireguard_port: 51820
+
+# Keep alive interval for peers (seconds)
+# Helps maintain connections through NAT/firewalls
+# Range: 10-60 seconds (25 is optimal for most networks)
+wireguard_persistent_keepalive: 25
+
+# DNS servers to use for the VPN interface (optional)
+# Only used if wireguard_configure_dns is enabled
+# Cloudflare and Google DNS as defaults
+wireguard_dns_servers:
+  - "1.1.1.1"    # Cloudflare primary
+  - "8.8.8.8"    # Google primary
+
+# Enable DNS configuration in WireGuard interface
+# Set to true if you want clients to use specific DNS servers
+wireguard_configure_dns: false
+
+# -----------------------------------------------------------------------------
+# 3. Interface Settings
+# -----------------------------------------------------------------------------
+# WireGuard network interface configuration and system settings.
+
+# MTU size for the WireGuard interface
+# 1420 is optimal for most networks (accounts for WireGuard overhead)
+# Adjust lower if experiencing fragmentation issues
+# Range: 1280-1500 (1420 is recommended default)
+wireguard_mtu: 1420
+
+# Enable/disable IP forwarding for mesh traffic
+# Required for mesh topology where traffic routes between peers
+# Modifies net.ipv4.ip_forward kernel parameter
+wireguard_enable_ip_forwarding: true
+
+# -----------------------------------------------------------------------------
+# 4. Security Settings
+# -----------------------------------------------------------------------------
+# Cryptographic keys, file permissions, and security configuration.
+
+# Automatically generate private/public key pairs if they don't exist
+# Set to false if you want to manage keys manually
+wireguard_generate_keys: true
+
+# Directory to store WireGuard configuration files and cryptographic keys
+# Must be writable by root and protected from other users
+wireguard_config_dir: "/etc/wireguard"
+
+# File permissions for private keys (owner read/write only)
+# Critical: Private keys must be protected from unauthorized access
+wireguard_private_key_permissions: "0600"
+
+# File permissions for public keys (world readable)
+# Public keys can be safely shared and read by system processes
+wireguard_public_key_permissions: "0644"
+
+# File permissions for WireGuard configuration files
+# Contains private keys, so must be protected like private key files
+wireguard_config_permissions: "0600"
+
+# Create backup of existing configuration before overwriting
+# Backup files are saved with timestamp suffix for recovery
+wireguard_backup_config: true
+
+# Enable Pre-Shared Key (PSK) for enhanced quantum-resistant security
+# PSK adds symmetric encryption layer on top of public key cryptography
+# Provides protection against quantum computing attacks on elliptic curves
+wireguard_enable_psk: true
+
+# Automatically generate Pre-Shared Keys if they don't exist
+# Each host generates its own PSK for sharing with mesh peers
+# Set to false if you want to manage PSK manually
+wireguard_generate_psk: true
+
+# File permissions for Pre-Shared Key files (owner read/write only)
+# Critical: PSK must be protected like private keys from unauthorized access
+wireguard_psk_permissions: "0600"
+
+# -----------------------------------------------------------------------------
+# 5. Service Settings
+# -----------------------------------------------------------------------------
+# SystemD service management and operational behavior.
+
+# WireGuard service name (automatically constructed from interface name)
+# Uses wg-quick systemd template for interface management
+wireguard_service_name: "wg-quick@{{ wireguard_interface }}"
+
+# Restart service when configuration files change
+# Ensures changes take effect immediately during role execution
+wireguard_restart_on_change: true
+
+# Enable service in systemd (auto-start on boot)
+# Service will start automatically after system restart
+wireguard_enable_service: true
+
+# Start service immediately after configuration
+# Set to false if you want to start service manually
+wireguard_start_service: true
+
+# Timeout for service start/stop operations (seconds)
+# Prevents hanging if service fails to respond
+# Range: 10-60 seconds (30 is reasonable default)
+wireguard_service_timeout: 30
+
+# -----------------------------------------------------------------------------
+# 6. Logging Configuration
+# -----------------------------------------------------------------------------
+# Centralized logging, rsyslog integration, and log rotation settings.
+
+# Enable dedicated logging for WireGuard service
+# Creates separate log files and configures rsyslog integration
+wireguard_enable_logging: true
+
+# Directory for WireGuard log files and archives
+# Must be writable by syslog user for proper log file creation
+wireguard_log_dir: "/var/log/wireguard"
+
+# Main WireGuard log file path
+# Constructed from log directory and standard filename
+wireguard_log_file: "{{ wireguard_log_dir }}/wireguard.log"
+
+# File permissions for log files (readable by system users)
+# Allows log monitoring tools and administrators to read logs
+wireguard_log_file_permissions: "0644"
+
+# Directory permissions for log directory
+# Allows navigation and file creation by appropriate users
+wireguard_log_dir_permissions: "0755"
+
+# Syslog program identifier for filtering
+# Used by rsyslog to route WireGuard messages to dedicated files
+# Must match systemd service SyslogIdentifier setting
+wireguard_syslog_identifier: "wireguard"
+
+# RSyslog configuration file name
+# Placed in /etc/rsyslog.d/ for automatic inclusion
+# Lower numbers are processed first (30 is good default)
+wireguard_rsyslog_config_file: "30-wireguard.conf"
+
+# Enable automatic log rotation with logrotate
+# Prevents log files from consuming excessive disk space
+wireguard_configure_logrotate: true
+
+# Log rotation configuration for managing WireGuard log file growth
+# Prevents logs from consuming excessive disk space over time
+wireguard_logrotate_options:
+  frequency: "daily"                                          # Rotation frequency (options: hourly, daily, weekly, monthly)
+  count: 7                                                    # Number of rotated log files to retain (7 = one week of daily logs)
+  missingok: true                                             # Don't generate error if log file is missing
+  notifempty: true                                            # Skip rotation if log file is empty (prevents unnecessary files)
+  compress: true                                              # Compress rotated logs with gzip to save disk space
+  delaycompress: true                                         # Delay compression until next rotation cycle (prevents issues with active processes)
+  create: true                                                # Create new empty log file after rotation
+  create_mode: "0640"                                         # File permissions for newly created log file (rw-r-----)
+  create_owner: "{{ wireguard_log_user }}"                   # Owner of newly created log file (OS-specific)
+  create_group: "{{ wireguard_log_group }}"                  # Group of newly created log file (OS-specific)
+  dateext: true                                               # Add date extension to rotated log files (YYYY-MM-DD)
+  archive_directory_path: "{{ wireguard_log_dir }}/archived" # Directory where archived/rotated logs are stored

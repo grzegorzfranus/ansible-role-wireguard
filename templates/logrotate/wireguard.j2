@@ -1,0 +1,44 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+# This file is managed by Ansible - do not edit manually
+# Log rotation configuration for WireGuard service
+# This template manages the rotation of WireGuard log files to prevent disk space issues
+# and maintain organized log archives.
+
+# Define log files to rotate
+{{ wireguard_log_file }} {
+  # Rotation frequency (daily, weekly, monthly)
+  {{ wireguard_logrotate_options.frequency }}
+  {% if wireguard_logrotate_options.missingok %}
+  # Don't error if log file is missing
+  missingok
+  {% endif %}
+  # Number of rotated files to keep
+  rotate {{ wireguard_logrotate_options.count }}
+  {% if wireguard_logrotate_options.compress %}
+  # Compress rotated log files
+  compress
+  {% endif %}
+  {% if wireguard_logrotate_options.delaycompress %}
+  # Delay compression until next rotation cycle
+  delaycompress
+  {% endif %}
+  {% if wireguard_logrotate_options.notifempty %}
+  # Don't rotate if log file is empty
+  notifempty
+  {% endif %}
+  {% if wireguard_logrotate_options.create %}
+  # Create new log file after rotation with specified permissions
+  create {{ wireguard_logrotate_options.create_mode }} {{ wireguard_logrotate_options.create_owner }} {{ wireguard_logrotate_options.create_group }}
+  {% endif %}
+  {% if wireguard_logrotate_options.dateext %}
+  # Add date to name of archive log files
+  dateext
+  dateformat .%Y-%m-%d
+  {% endif %}
+  # Archive log directory path
+  olddir {{ wireguard_logrotate_options.archive_directory_path }}
+  # Execute commands after log rotation
+  postrotate
+    systemctl reload rsyslog >/dev/null 2>&1 || true
+  endscript
+}

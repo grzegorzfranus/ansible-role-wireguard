@@ -1,0 +1,72 @@
+---
+# =============================================================================
+# Ansible Role: WireGuard Mesh - Internal Variables
+# =============================================================================
+# Role-specific variables that should NOT be overridden by users.
+# These variables are used internally by the role and contain system-specific
+# values, package names, and technical constants.
+#
+# Sections:
+#   1. Package Management
+#   2. File Paths and Templates
+#   3. System Requirements
+#   4. Platform Support
+#   5. Logging Defaults
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Package Management
+# -----------------------------------------------------------------------------
+# Ubuntu package names for WireGuard installation.
+
+# Core WireGuard packages required for mesh VPN functionality
+# - wireguard: Main WireGuard kernel module and utilities
+# - wireguard-tools: Command-line tools (wg, wg-quick)
+wireguard_packages:
+  - wireguard
+  - wireguard-tools
+
+# -----------------------------------------------------------------------------
+# 2. File Paths and Templates
+# -----------------------------------------------------------------------------
+# Internal file paths constructed from user-configurable variables.
+
+# WireGuard main configuration file path
+# Constructed from config directory and interface name for flexibility
+wireguard_config_file: "{{ wireguard_config_dir }}/{{ wireguard_interface }}.conf"
+
+# -----------------------------------------------------------------------------
+# 3. System Requirements
+# -----------------------------------------------------------------------------
+# Kernel modules and system dependencies required for operation.
+
+# Required kernel modules for WireGuard functionality
+# These modules must be available in the Linux kernel
+wireguard_required_kernel_modules:
+  - wireguard
+
+# -----------------------------------------------------------------------------
+# 4. Platform Support
+# -----------------------------------------------------------------------------
+# Supported operating system versions and compatibility matrix.
+
+# Supported Ubuntu versions for this role
+# Only LTS versions are officially supported for stability
+# Non-LTS versions may work but are not tested
+wireguard_supported_ubuntu_versions:
+  - "22.04"  # Ubuntu 22.04 LTS (Jammy Jellyfish)
+  - "24.04"  # Ubuntu 24.04 LTS (Noble Numbat)
+
+# Supported Debian versions for this role
+# Only stable versions are officially supported
+wireguard_supported_debian_versions:
+  - "12"     # Debian 12 (Bookworm)
+
+# -----------------------------------------------------------------------------
+# 5. Logging Defaults
+# -----------------------------------------------------------------------------
+# Fallback values for logging configuration if OS-specific variables are not loaded
+
+# Default syslog user and group (fallback to root for maximum compatibility)
+wireguard_log_user: "root"
+wireguard_log_group: "root"

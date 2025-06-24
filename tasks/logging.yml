@@ -1,0 +1,140 @@
+---
+# =============================================================================
+# Ansible Role: WireGuard Mesh - Logging Configuration
+# =============================================================================
+# This file contains tasks for configuring comprehensive logging for WireGuard.
+# It handles systemd service logging, rsyslog integration, and log rotation
+# to provide complete operational visibility.
+#
+# Flow:
+# 1. Systemd Service Override Configuration
+# 2. Log Directory Management
+# 3. RSyslog Integration
+# 4. Log Rotation Configuration
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Systemd Service Override Configuration
+# -----------------------------------------------------------------------------
+- name: WireGuard | logging | Create systemd override directory
+  become: true
+  ansible.builtin.file:
+    path: "/etc/systemd/system/{{ wireguard_service_name }}.d"
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+  when: >
+    not (wireguard_molecule_test_mode | default(false))
+
+- name: WireGuard | logging | Configure systemd override for wg-quick logging
+  become: true
+  ansible.builtin.blockinfile:
+    path: "/etc/systemd/system/{{ wireguard_service_name }}.d/override.conf"
+    create: yes
+    mode: '0644'
+    owner: root
+    group: root
+    block: |
+      [Service]
+      StandardOutput=syslog
+      StandardError=syslog
+      SyslogIdentifier={{ wireguard_syslog_identifier }}
+  notify:
+    - reload systemd
+    - restart wireguard
+  when: >
+    not (wireguard_molecule_test_mode | default(false))
+
+# -----------------------------------------------------------------------------
+# 2. Log Directory Management
+# -----------------------------------------------------------------------------
+- name: WireGuard | logging | Create WireGuard log directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ wireguard_log_dir }}"
+    state: directory
+    mode: "{{ wireguard_log_dir_permissions }}"
+    owner: "{{ wireguard_log_user }}"
+    group: "{{ wireguard_log_group }}"
+
+- name: WireGuard | logging | Create WireGuard log file
+  become: true
+  ansible.builtin.file:
+    path: "{{ wireguard_log_file }}"
+    state: touch
+    mode: "{{ wireguard_log_file_permissions }}"
+    owner: "{{ wireguard_log_user }}"
+    group: "{{ wireguard_log_group }}"
+    modification_time: preserve
+    access_time: preserve
+
+# -----------------------------------------------------------------------------
+# 3. RSyslog Integration
+# -----------------------------------------------------------------------------
+- name: WireGuard | logging | Install rsyslog package
+  become: true
+  ansible.builtin.package:
+    name: rsyslog
+    state: present
+  when: >
+    not (wireguard_molecule_test_mode | default(false))
+
+- name: WireGuard | logging | Ensure rsyslog.d directory exists
+  become: true
+  ansible.builtin.file:
+    path: /etc/rsyslog.d
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: WireGuard | logging | Configure rsyslog for WireGuard
+  become: true
+  ansible.builtin.template:
+    src: rsyslog/wireguard.conf.j2
+    dest: "/etc/rsyslog.d/{{ wireguard_rsyslog_config_file }}"
+    mode: '0644'
+    owner: root
+    group: root
+    backup: "{{ not (wireguard_molecule_test_mode | default(false)) }}"
+  notify:
+    - restart rsyslog
+
+# -----------------------------------------------------------------------------
+# 4. Log Rotation Configuration
+# -----------------------------------------------------------------------------
+- name: WireGuard | logging | Create logrotate archive directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ wireguard_logrotate_options.archive_directory_path }}"
+    state: directory
+    mode: "{{ wireguard_log_dir_permissions }}"
+    owner: "{{ wireguard_log_user }}"
+    group: "{{ wireguard_log_group }}"
+  when: >
+    wireguard_configure_logrotate | bool and
+    wireguard_logrotate_options.archive_directory_path is defined
+
+- name: WireGuard | logging | Configure logrotate for WireGuard logs
+  become: true
+  ansible.builtin.template:
+    src: logrotate/wireguard.j2
+    dest: /etc/logrotate.d/wireguard
+    mode: '0644'
+    owner: root
+    group: root
+    backup: "{{ not (wireguard_molecule_test_mode | default(false)) }}"
+  when: >
+    wireguard_configure_logrotate | bool
+
+- name: ✅ WireGuard | logging | Display logging configuration status
+  ansible.builtin.debug:
+    msg:
+      - "✅ WireGuard logging configured successfully"
+      - "📝 Log directory: {{ wireguard_log_dir }}"
+      - "📄 Log file: {{ wireguard_log_file }}"
+      - "🔄 Syslog identifier: {{ wireguard_syslog_identifier }}"
+      - "📊 Logrotate: {% if wireguard_configure_logrotate %}enabled{% else %}disabled{% endif %}"
+      - "🧪 RSyslog: {% if wireguard_molecule_test_mode | default(false) %}configured (test mode){% else %}configured{% endif %}"
+  changed_when: false

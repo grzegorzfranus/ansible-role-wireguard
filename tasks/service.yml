@@ -1,0 +1,118 @@
+---
+# =============================================================================
+# Ansible Role: WireGuard Mesh - Service Management
+# =============================================================================
+# This file contains tasks for managing the WireGuard systemd service.
+# It handles service state, connectivity verification, and operational validation.
+#
+# Flow:
+# 1. Service State Management (skip in test containers)
+# 2. Configuration Reload
+# 3. Connectivity Verification (skip in test containers)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Service State Management (skip in test containers)
+# -----------------------------------------------------------------------------
+- name: WireGuard | service | Stop WireGuard service if running (for reconfiguration)
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ wireguard_service_name }}"
+    state: stopped
+  when: >
+    wireguard_restart_on_change | bool and
+    wireguard_config_result is defined and
+    wireguard_config_result is changed and
+    not (wireguard_molecule_test_mode | default(false))
+  ignore_errors: true
+
+- name: WireGuard | service | Enable WireGuard service
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ wireguard_service_name }}"
+    enabled: "{{ wireguard_service_enabled | bool }}"
+    daemon_reload: true
+  when: >
+    wireguard_enable_service | bool and
+    not (wireguard_molecule_test_mode | default(false))
+
+- name: WireGuard | service | Start WireGuard service
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ wireguard_service_name }}"
+    state: started
+  when: >
+    wireguard_start_service | bool and
+    wireguard_service_enabled | bool and
+    not (wireguard_molecule_test_mode | default(false))
+  register: wireguard_service_start_result
+
+- name: 🧪 WireGuard | service | Skip service management in test environment
+  ansible.builtin.debug:
+    msg: "⚠️ Skipping WireGuard service operations in test container environment"
+  when: >
+    wireguard_molecule_test_mode | default(false)
+  changed_when: false
+
+# -----------------------------------------------------------------------------
+# 2. Configuration Reload
+# -----------------------------------------------------------------------------
+- name: WireGuard | service | Wait for service to be fully started
+  ansible.builtin.pause:
+    seconds: 2
+  when: >
+    wireguard_service_start_result is changed and
+    not (wireguard_molecule_test_mode | default(false))
+
+# -----------------------------------------------------------------------------
+# 3. Connectivity Verification (skip in test containers)
+# -----------------------------------------------------------------------------
+- name: 🔍 WireGuard | service | Check WireGuard service status
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ wireguard_service_name }}"
+  register: wireguard_service_status
+  when: >
+    not (wireguard_molecule_test_mode | default(false))
+
+- name: 🔍 WireGuard | service | Verify WireGuard interface is up
+  become: true
+  ansible.builtin.command: wg show {{ wireguard_interface }}
+  register: wireguard_interface_status
+  changed_when: false
+  failed_when: false
+  when: >
+    not (wireguard_molecule_test_mode | default(false))
+
+- name: ✅ WireGuard | service | Display service status
+  ansible.builtin.debug:
+    msg:
+      - "✅ WireGuard service status: {{ wireguard_service_status.status.ActiveState }}"
+      - "🌐 Interface {{ wireguard_interface }} status: {% if wireguard_interface_status.rc == 0 %}UP{% else %}DOWN{% endif %}"
+  when: >
+    not (wireguard_molecule_test_mode | default(false))
+  changed_when: false
+
+- name: 🧪 WireGuard | service | Test mesh connectivity (ping peers)
+  ansible.builtin.command: |
+    ping -c 1 -W 5 {{ wireguard_network_prefix }}.{{ groups[wireguard_inventory_group].index(item) + 1 }}
+  loop: "{{ groups[wireguard_inventory_group] }}"
+  when: >
+    item != inventory_hostname and
+    wireguard_interface_status.rc == 0 and
+    not (wireguard_molecule_test_mode | default(false))
+  register: wireguard_connectivity_test
+  failed_when: false
+  changed_when: false
+
+- name: 🧪 WireGuard | service | Display test environment summary
+  ansible.builtin.debug:
+    msg:
+      - "✅ WireGuard role execution completed in test environment"
+      - "🔧 Configuration file created: {{ wireguard_config_file }}"
+      - "🔐 Private key generated: {{ wireguard_config_dir }}/privatekey"
+      - "🔑 Public key generated: {{ wireguard_config_dir }}/publickey"
+      - "⚠️ Service operations skipped in container environment"
+  when: >
+    wireguard_molecule_test_mode | default(false)
+  changed_when: false

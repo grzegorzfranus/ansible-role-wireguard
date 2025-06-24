@@ -1,0 +1,153 @@
+---
+# =============================================================================
+# Ansible Role: WireGuard Mesh - Cryptographic Key Management
+# =============================================================================
+# This file contains tasks for generating and managing WireGuard cryptographic
+# keys. It handles private/public key pair generation, fact storage, and secure
+# file permissions for mesh network configuration.
+#
+# Flow:
+# 1. Key Directory Management
+# 2. Private Key Generation
+# 3. Public Key Derivation
+# 4. Pre-Shared Key Management (PSK) - Enhanced Security
+# 5. Fact Storage and Registration
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Key Directory Management
+# -----------------------------------------------------------------------------
+- name: 🔍 WireGuard | keys | Check if private key exists
+  become: true
+  ansible.builtin.stat:
+    path: "{{ wireguard_config_dir }}/privatekey"
+  register: wireguard_private_key_stat
+
+# -----------------------------------------------------------------------------
+# 2. Private Key Generation
+# -----------------------------------------------------------------------------
+- name: WireGuard | keys | Generate private key
+  become: true
+  ansible.builtin.shell: |
+    wg genkey > {{ wireguard_config_dir }}/privatekey
+  when: >
+    not wireguard_private_key_stat.stat.exists
+  register: wireguard_private_key_generated
+
+- name: WireGuard | keys | Set private key permissions
+  become: true
+  ansible.builtin.file:
+    path: "{{ wireguard_config_dir }}/privatekey"
+    mode: "{{ wireguard_private_key_permissions }}"
+    owner: root
+    group: root
+
+# -----------------------------------------------------------------------------
+# 3. Public Key Derivation
+# -----------------------------------------------------------------------------
+- name: WireGuard | keys | Generate public key from private key
+  become: true
+  ansible.builtin.shell: |
+    wg pubkey < {{ wireguard_config_dir }}/privatekey > {{ wireguard_config_dir }}/publickey
+  when: >
+    wireguard_private_key_generated is changed or
+    not wireguard_private_key_stat.stat.exists
+
+- name: WireGuard | keys | Set public key permissions
+  become: true
+  ansible.builtin.file:
+    path: "{{ wireguard_config_dir }}/publickey"
+    mode: "{{ wireguard_public_key_permissions }}"
+    owner: root
+    group: root
+
+# -----------------------------------------------------------------------------
+# 4. Pre-Shared Key Management (PSK) - Enhanced Security
+# -----------------------------------------------------------------------------
+- name: 🔍 WireGuard | keys | Check if PSK exists
+  become: true
+  ansible.builtin.stat:
+    path: "{{ wireguard_config_dir }}/psk"
+  register: wireguard_psk_stat
+  when: >
+    wireguard_enable_psk | bool
+
+- name: WireGuard | keys | Generate Pre-Shared Key (PSK)
+  become: true
+  ansible.builtin.shell: |
+    wg genpsk > {{ wireguard_config_dir }}/psk
+  when: >
+    wireguard_enable_psk | bool and
+    wireguard_generate_psk | bool and
+    not wireguard_psk_stat.stat.exists
+  register: wireguard_psk_generated
+
+- name: WireGuard | keys | Set PSK permissions
+  become: true
+  ansible.builtin.file:
+    path: "{{ wireguard_config_dir }}/psk"
+    mode: "{{ wireguard_psk_permissions }}"
+    owner: root
+    group: root
+  when: >
+    wireguard_enable_psk | bool
+
+- name: WireGuard | keys | Read PSK content
+  become: true
+  ansible.builtin.slurp:
+    src: "{{ wireguard_config_dir }}/psk"
+  register: wireguard_psk_content
+  when: >
+    wireguard_enable_psk | bool
+
+- name: WireGuard | keys | Store PSK in facts
+  ansible.builtin.set_fact:
+    wireguard_local_psk: "{{ wireguard_psk_content.content | b64decode | trim }}"
+  when: >
+    wireguard_enable_psk | bool
+
+# -----------------------------------------------------------------------------
+# 5. Fact Storage and Registration
+# -----------------------------------------------------------------------------
+- name: WireGuard | keys | Read private key
+  become: true
+  ansible.builtin.slurp:
+    src: "{{ wireguard_config_dir }}/privatekey"
+  register: wireguard_private_key_content
+
+- name: WireGuard | keys | Read public key
+  become: true
+  ansible.builtin.slurp:
+    src: "{{ wireguard_config_dir }}/publickey"
+  register: wireguard_public_key_content
+
+- name: WireGuard | keys | Store keys in facts
+  ansible.builtin.set_fact:
+    wireguard_local_private_key: "{{ wireguard_private_key_content.content | b64decode | trim }}"
+    wireguard_local_public_key: "{{ wireguard_public_key_content.content | b64decode | trim }}"
+
+- name: WireGuard | keys | Create host facts directory
+  become: true
+  ansible.builtin.file:
+    path: /etc/ansible/facts.d
+    state: directory
+    mode: '0755'
+
+- name: WireGuard | keys | Store keys in host facts
+  become: true
+  ansible.builtin.copy:
+    content: |
+      {
+        "wireguard_public_key": "{{ wireguard_local_public_key }}"{% if wireguard_enable_psk | bool %},
+        "wireguard_psk": "{{ wireguard_local_psk }}"{% endif %}
+      }
+    dest: /etc/ansible/facts.d/wireguard.fact
+    mode: '0644'
+
+- name: WireGuard | keys | Refresh ansible facts
+  ansible.builtin.setup:
+    filter: "ansible_local"
+
+- name: ✅ WireGuard | keys | Display key generation status
+  ansible.builtin.debug:
+    msg: "✅ WireGuard keys managed for host {{ inventory_hostname }}"

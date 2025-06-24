@@ -1,0 +1,36 @@
+---
+# =============================================================================
+# Ansible Role: WireGuard Mesh - Ubuntu 24.04 LTS Variables
+# =============================================================================
+# OS-specific variables for Ubuntu 24.04 LTS (Noble Numbat).
+# These variables define packages, paths, and configurations specific
+# to this operating system version.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Package Configuration
+# -----------------------------------------------------------------------------
+# WireGuard packages for Ubuntu 24.04 LTS
+wireguard_packages:
+  - wireguard
+  - wireguard-tools
+
+# -----------------------------------------------------------------------------
+# Service Configuration
+# -----------------------------------------------------------------------------
+# Service name for WireGuard on Ubuntu 24.04
+wireguard_service_name: "wg-quick@{{ wireguard_interface }}"
+
+# -----------------------------------------------------------------------------
+# Logging Configuration
+# -----------------------------------------------------------------------------
+# Syslog user and group for Ubuntu 24.04
+# Ubuntu has dedicated syslog user and adm group for log management
+wireguard_log_user: "syslog"
+wireguard_log_group: "adm"
+
+# -----------------------------------------------------------------------------
+# System Requirements
+# -----------------------------------------------------------------------------
+# Minimum kernel version for WireGuard on Ubuntu 24.04
+wireguard_minimum_kernel_version: "6.8"

@@ -1,0 +1,136 @@
+---
+# =============================================================================
+# Ansible Role: WireGuard Mesh - Main Tasks
+# =============================================================================
+# This is the main task file for the WireGuard mesh role. It orchestrates the
+# execution of all role components in the correct order to create a secure mesh
+# VPN network. Each task is tagged appropriately to allow for selective execution.
+#
+# Flow:
+# 1. Operating System Validation
+# 2. Load OS-Specific Variables
+# 3. Validate Role Variables and Requirements
+# 4. Check System Prerequisites
+# 5. Install WireGuard Packages
+# 6. Generate and Manage Cryptographic Keys
+# 7. Configure WireGuard Interface
+# 8. Configure Logging (Optional)
+# 9. Start and Enable Service
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Operating System Validation
+# -----------------------------------------------------------------------------
+- name: 🧪 WireGuard | assert | Validate supported operating system
+  ansible.builtin.fail:
+    msg: "❌ Unsupported OS: {{ ansible_distribution }} {{ ansible_distribution_version }}. This role supports Ubuntu 22.04, 24.04 and Debian 12."
+  when: >
+    (ansible_distribution == "Ubuntu" and ansible_distribution_version not in wireguard_supported_ubuntu_versions) or
+    (ansible_distribution == "Debian" and ansible_distribution_major_version not in wireguard_supported_debian_versions) or
+    (ansible_distribution not in ["Ubuntu", "Debian"])
+  tags:
+    - always
+    - validate
+    - check
+
+# -----------------------------------------------------------------------------
+# 2. OS-Specific Variables
+# -----------------------------------------------------------------------------
+- name: 📂 WireGuard | include_vars | Gather OS specific variables
+  ansible.builtin.include_vars: "{{ lookup('first_found', params) }}"
+  vars:
+    params:
+      files:
+        - "{{ ansible_facts['distribution'] | lower }}_{{ ansible_facts['distribution_version'] | lower }}.yml"
+        - "{{ ansible_facts['distribution'] | lower }}_{{ ansible_facts['distribution_major_version'] | lower }}.yml"
+        - "{{ ansible_facts['distribution'] | lower }}.yml"
+        - "{{ ansible_facts['os_family'] | lower }}_{{ ansible_facts['distribution_version'] | lower }}.yml"
+        - "{{ ansible_facts['os_family'] | lower }}_{{ ansible_facts['distribution_major_version'].split('.')[0] }}.yml"
+        - "{{ ansible_facts['os_family'] | lower }}.yml"
+        - "main.yml"
+      paths:
+        - "{{ role_path }}/vars"
+  tags:
+    - always
+    - setup
+    - init
+
+# -----------------------------------------------------------------------------
+# 3. Variable Validation
+# -----------------------------------------------------------------------------
+- name: 🧪 WireGuard | assert | Validate role variables and requirements
+  ansible.builtin.include_tasks: assert.yml
+  run_once: true
+  tags:
+    - always
+    - validate
+    - check
+
+# -----------------------------------------------------------------------------
+# 4. System Prerequisites
+# -----------------------------------------------------------------------------
+- name: 🛠️ WireGuard | prerequisites | Verify system prerequisites
+  ansible.builtin.include_tasks: prerequisites.yml
+  when: >
+    wireguard_role_action in ['all', 'prerequisites']
+  tags:
+    - setup
+    - prerequisites
+
+# -----------------------------------------------------------------------------
+# 5. Package Installation
+# -----------------------------------------------------------------------------
+- name: 📦 WireGuard | install | Install WireGuard package
+  ansible.builtin.include_tasks: install.yml
+  when: >
+    wireguard_role_action in ['all', 'install']
+  tags:
+    - setup
+    - install
+
+# -----------------------------------------------------------------------------
+# 6. Cryptographic Key Management
+# -----------------------------------------------------------------------------
+- name: 🔐 WireGuard | keys | Generate and manage WireGuard keys
+  ansible.builtin.include_tasks: keys.yml
+  when: >
+    wireguard_role_action in ['all', 'configure']
+  tags:
+    - setup
+    - configure
+    - keys
+    - security
+
+# -----------------------------------------------------------------------------
+# 7. Service Configuration
+# -----------------------------------------------------------------------------
+- name: 🌐 WireGuard | configure | Configure WireGuard service
+  ansible.builtin.include_tasks: configure.yml
+  when: >
+    wireguard_role_action in ['all', 'configure']
+  tags:
+    - setup
+    - configure
+
+# -----------------------------------------------------------------------------
+# 8. Logging Configuration (Optional)
+# -----------------------------------------------------------------------------
+- name: 📝 WireGuard | logging | Configure logging for WireGuard service
+  ansible.builtin.include_tasks: logging.yml
+  when: >
+    wireguard_role_action in ['all', 'configure', 'logging'] and
+    wireguard_enable_logging | default(false)
+  tags:
+    - config
+    - logging
+
+# -----------------------------------------------------------------------------
+# 9. Service Management
+# -----------------------------------------------------------------------------
+- name: 🚀 WireGuard | service | Manage WireGuard service
+  ansible.builtin.include_tasks: service.yml
+  when: >
+    wireguard_role_action in ['all', 'configure']
+  tags:
+    - configure
+    - service

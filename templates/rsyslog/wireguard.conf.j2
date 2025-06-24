@@ -1,0 +1,14 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+# This file is managed by Ansible - do not edit manually
+# RSyslog configuration for WireGuard service
+
+# RSyslog configuration for WireGuard service
+# This template configures rsyslog to redirect WireGuard logs to a dedicated file
+# for better log organization and monitoring.
+
+# Redirect WireGuard logs to dedicated file
+# Match logs by program name and redirect to the specified log file
+:programname, isequal, "{{ wireguard_syslog_identifier }}" {{ wireguard_log_file }}
+
+# Stop processing these logs further to prevent duplication
+& stop

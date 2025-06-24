@@ -1,0 +1,68 @@
+---
+# =============================================================================
+# Ansible Role: WireGuard Mesh - Service Configuration
+# =============================================================================
+# This file contains tasks for configuring the WireGuard mesh service.
+# It handles IP address assignment, key exchange, configuration deployment,
+# and service state management.
+#
+# Flow:
+# 1. Network Address Assignment
+# 2. Peer Key Collection
+# 3. Configuration File Deployment
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Network Address Assignment
+# -----------------------------------------------------------------------------
+- name: WireGuard | configure | Calculate server IP from inventory position
+  ansible.builtin.set_fact:
+    wireguard_server_ip: "{{ wireguard_network_prefix }}.{{ groups[wireguard_inventory_group].index(inventory_hostname) + 1 }}"
+
+# -----------------------------------------------------------------------------
+# 2. Peer Key Collection
+# -----------------------------------------------------------------------------
+- name: WireGuard | configure | Gather public keys from all mesh peers
+  ansible.builtin.set_fact:
+    wireguard_peer_public_keys: "{{ wireguard_peer_public_keys | default({}) | combine({item: hostvars[item]['ansible_local']['wireguard']['wireguard_public_key']}) }}"
+  loop: "{{ groups[wireguard_inventory_group] }}"
+  when: >
+    item != inventory_hostname
+
+# -----------------------------------------------------------------------------
+# 3. Configuration File Deployment
+# -----------------------------------------------------------------------------
+- name: WireGuard | configure | Backup existing configuration
+  become: true
+  ansible.builtin.copy:
+    src: "{{ wireguard_config_file }}"
+    dest: "{{ wireguard_config_file }}.backup.{{ ansible_date_time.epoch }}"
+    remote_src: true
+    mode: preserve
+  when: >
+    wireguard_backup_config | bool and
+    wireguard_config_file is exists and
+    not (wireguard_molecule_test_mode | default(false))
+  ignore_errors: true
+
+- name: WireGuard | configure | Deploy WireGuard configuration file
+  become: true
+  ansible.builtin.template:
+    src: wireguard.conf.j2
+    dest: "{{ wireguard_config_file }}"
+    mode: "{{ wireguard_config_permissions }}"
+    owner: root
+    group: root
+    backup: false
+  notify:
+    - restart wireguard
+  register: wireguard_config_result
+
+- name: ✅ WireGuard | configure | Display configuration status
+  ansible.builtin.debug:
+    msg:
+      - "✅ WireGuard configuration completed for {{ inventory_hostname }}"
+      - "🌐 Server IP: {{ wireguard_server_ip }}/24"
+      - "🔗 Mesh peers: {{ groups[wireguard_inventory_group] | length - 1 }}"
+      - "🔧 Configuration file: {{ wireguard_config_file }}"
+  changed_when: false

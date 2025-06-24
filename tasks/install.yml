@@ -1,0 +1,62 @@
+---
+# =============================================================================
+# Ansible Role: WireGuard Mesh - Package Installation
+# =============================================================================
+# This file contains tasks for installing WireGuard packages and dependencies.
+# It handles package installation with appropriate error handling and verification.
+#
+# Flow:
+# 1. Update Package Cache and Install WireGuard
+# 2. Load Kernel Module (skip in test containers)
+# 3. Verify Installation
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Update Package Cache and Install WireGuard
+# -----------------------------------------------------------------------------
+- name: WireGuard | install | Install WireGuard packages
+  become: true
+  ansible.builtin.apt:
+    name: "{{ wireguard_packages }}"
+    state: present
+    update_cache: true
+  register: wireguard_install_result
+
+# -----------------------------------------------------------------------------
+# 2. Load Kernel Module (skip in test containers)
+# -----------------------------------------------------------------------------
+- name: WireGuard | install | Load WireGuard kernel module
+  become: true
+  community.general.modprobe:
+    name: wireguard
+    state: present
+  register: wireguard_module_load
+  when: >
+    not (wireguard_molecule_test_mode | default(false))
+
+- name: 🧪 WireGuard | install | Skip kernel module loading in test environment
+  ansible.builtin.debug:
+    msg: "⚠️ Skipping WireGuard kernel module loading in test container environment"
+  when: >
+    wireguard_molecule_test_mode | default(false)
+
+# -----------------------------------------------------------------------------
+# 3. Verify Installation
+# -----------------------------------------------------------------------------
+- name: 🧪 WireGuard | install | Verify WireGuard installation
+  ansible.builtin.command: wg --version
+  register: wireguard_version
+  changed_when: false
+
+- name: ✅ WireGuard | install | Display WireGuard version
+  ansible.builtin.debug:
+    msg: "✅ WireGuard successfully installed: {{ wireguard_version.stdout }}"
+
+- name: 🔍 WireGuard | install | Ensure wg-quick is available
+  ansible.builtin.command: which wg-quick
+  register: wg_quick_path
+  changed_when: false
+
+- name: ✅ WireGuard | install | Verify wg-quick availability
+  ansible.builtin.debug:
+    msg: "✅ wg-quick available at: {{ wg_quick_path.stdout }}"

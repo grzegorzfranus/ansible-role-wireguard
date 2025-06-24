@@ -1,0 +1,45 @@
+---
+# =============================================================================
+# Ansible Role: WireGuard Mesh - Handlers
+# =============================================================================
+# Handlers are used to perform service actions in response to configuration changes.
+# These handlers manage WireGuard service state, systemd daemon reload, and logging
+# service restart when notified by tasks that modify system configuration.
+#
+# Variables:
+#   wireguard_service_name - Name of the WireGuard service to manage (wg-quick@wg0)
+#   wireguard_service_enabled - Boolean flag to control service enablement
+#   wireguard_molecule_test_mode - Boolean flag to skip operations in test mode
+#
+# Handler Triggers:
+#   restart wireguard - Triggered when WireGuard configuration changes
+#   reload systemd - Triggered when systemd unit files are modified
+#   restart rsyslog - Triggered when rsyslog configuration changes
+# =============================================================================
+
+- name: 🔄 WireGuard | handlers | Restart WireGuard service
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ wireguard_service_name }}"
+    state: restarted
+    enabled: "{{ wireguard_service_enabled | bool }}"
+  listen: "restart wireguard"
+  when: >
+    not (wireguard_molecule_test_mode | default(false))
+
+- name: 🔄 WireGuard | handlers | Reload systemd daemon
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true
+  listen: "reload systemd"
+  when: >
+    not (wireguard_molecule_test_mode | default(false))
+
+- name: 🔄 WireGuard | handlers | Restart rsyslog service
+  become: true
+  ansible.builtin.systemd:
+    name: rsyslog
+    state: restarted
+  listen: "restart rsyslog"
+  when: >
+    not (wireguard_molecule_test_mode | default(false))
