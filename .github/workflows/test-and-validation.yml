@@ -1,5 +1,5 @@
 ---
-name: CI
+name: 🧪 Test & Validation Pipeline
 
 on:
   push:

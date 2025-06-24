@@ -397,7 +397,7 @@ sudo cat /etc/wireguard/psk
 ansible-role-wireguard/
 ├── .github/                  # GitHub Actions workflows
 │   └── workflows/           # CI/CD automation
-│       ├── ci.yml           # 🧪 Testing and linting workflow
+│       ├── test-and-validation.yml # 🧪 Testing and validation workflow
 │       └── publish-to-galaxy.yml # 📦 Ansible Galaxy publishing workflow
 ├── CHANGELOG.md              # Version history and changes
 ├── LICENSE                   # Apache-2.0 license
@@ -478,18 +478,39 @@ molecule test --scenario-name default
 molecule lint
 ```
 
-### CI/CD Integration
+## 🔧 CI/CD Integration
 
-The role is continuously tested and deployed using GitHub Actions with:
-- ✅ **YAML linting** with yamllint
-- ✅ **Ansible linting** with ansible-lint
-- ✅ **Multi-platform testing** with Molecule
-- ✅ **Idempotence testing** - All template operations are guaranteed to be idempotent
-- ✅ **Cross-platform compatibility** validation
-- ✅ **Container environment testing** with Docker
-- ✅ **📦 Automated Galaxy publishing** - Professional workflow with emoji indicators
+This role includes comprehensive GitHub Actions workflows for automated testing and deployment:
 
-### Test Quality Assurance
+### Testing Pipeline 🧪
+- **Workflow**: `.github/workflows/test-and-validation.yml`
+- **Name**: `🧪 Test & Validation Pipeline`
+- **Purpose**: Automated testing across multiple platforms
+- **Triggers**: Push to main branch, pull requests
+- **Features**:
+  - Multi-platform testing (Ubuntu 22.04, 24.04, Debian 12)
+  - Ansible lint validation
+  - Molecule test execution
+  - Cross-platform compatibility verification
+
+### Galaxy Publishing 📦
+- **Workflow**: `.github/workflows/publish-to-galaxy.yml`
+- **Name**: `📦 Publish to Ansible Galaxy`
+- **Purpose**: Automated role publishing to Ansible Galaxy
+- **Triggers**: Tagged releases (v*)
+- **Features**:
+  - Automated version detection
+  - Quality assurance checks
+  - Secure deployment to Galaxy
+
+### Professional Workflow Organization 🚀
+Both workflows feature:
+- **Emoji Indicators**: Clear visual status representation
+- **Professional Naming**: Descriptive and semantic job/step names
+- **Consistent Structure**: Standardized approach across all CI/CD operations
+- **Enhanced Readability**: Improved maintainability and understanding
+
+### Test Quality Assurance 🔍
 
 The role has been extensively tested for:
 - ✅ **Template Stability**: All Jinja2 templates generate identical output across multiple runs

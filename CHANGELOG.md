@@ -5,27 +5,31 @@ All notable changes to this WireGuard Mesh VPN role will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.4.5] - 2024-12-19
+## [1.4.5] - 2025-06-24
 
 ### Changed 🔄
 - **Professional Workflow Naming** - Renamed `galaxy.yml` to `publish-to-galaxy.yml` for better clarity
-- **Enhanced CI/CD Presentation** - Added emoji indicators throughout Galaxy publishing workflow
-- **Improved Job Organization** - Renamed workflow job from `release` to `publish` for better semantic meaning
+- **CI Pipeline Rebranding** - Renamed `ci.yml` to `test-and-validation.yml` with professional naming
+- **Enhanced CI/CD Presentation** - Added emoji indicators throughout all GitHub Actions workflows
+- **Improved Job Organization** - Renamed workflow jobs for better semantic meaning and clarity
 - **Step Name Clarity** - Enhanced step descriptions with more specific and professional language
 
 ### Workflow Improvements 🚀
-- **Main Workflow Name**: Changed to `📦 Publish to Ansible Galaxy` with descriptive emoji
-- **Job Naming**: Updated job name to `🚀 Publish role to Galaxy` for better visibility
+- **Galaxy Publishing**: Changed to `📦 Publish to Ansible Galaxy` with descriptive emoji
+- **Testing Pipeline**: Updated to `🧪 Test & Validation Pipeline` for professional appearance
+- **Job Naming**: Consistent professional naming across all workflows
 - **Step Emojis**: Added relevant emoji to all workflow steps:
   - 📥 Check out the codebase
   - 🐍 Set up Python 3
-  - 📦 Install Ansible dependencies
-  - 🚀 Upload role to Ansible Galaxy
+  - 📦 Install dependencies / Install Ansible dependencies
+  - 🔍 Lint code
+  - 🧪 Molecule test
+  - 🚀 Upload role to Ansible Galaxy / Run molecule test
 
 ### Repository Organization 📁
-- **Workflow Consolidation**: Maintained single Galaxy publishing workflow with professional naming
-- **Consistency**: Aligned Galaxy workflow naming and emoji usage with CI testing workflow
-- **Documentation**: Enhanced workflow readability and maintenance
+- **Workflow Consolidation**: Two professionally named workflows for complete CI/CD pipeline
+- **Consistency**: Aligned all workflow naming and emoji usage for cohesive presentation
+- **Documentation**: Enhanced workflow readability and maintenance across the board
 
 ## [1.4.4] - 2024-06-23
 
