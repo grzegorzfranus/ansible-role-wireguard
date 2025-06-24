@@ -2,7 +2,7 @@
 
 |Source|Version|CI|License|
 |------|-------|-------|-------|
-|[![Source Code](https://img.shields.io/badge/source-github-blue.svg)](https://github.com/grzegorzfranus/ansible-role-wireguard)|[![Version](https://img.shields.io/github/v/release/grzegorzfranus/ansible-role-wireguard)](https://github.com/grzegorzfranus/ansible-role-wireguard/releases)|[![tests](https://github.com/grzegorzfranus/ansible-role-wireguard/actions/workflows/ci.yml/badge.svg)](https://github.com/grzegorzfranus/ansible-role-wireguard/actions)|[![Repository License](https://img.shields.io/badge/license-apache2.0-brightgreen.svg)](LICENSE)|
+|[![Source Code](https://img.shields.io/badge/source-github-blue.svg)](https://github.com/grzegorzfranus/ansible-role-wireguard)|[![Version](https://img.shields.io/github/v/release/grzegorzfranus/ansible-role-wireguard)](https://github.com/grzegorzfranus/ansible-role-wireguard/releases)|[![tests](https://github.com/grzegorzfranus/ansible-role-wireguard/actions/workflows/test-and-validation.yml/badge.svg)](https://github.com/grzegorzfranus/ansible-role-wireguard/actions)|[![Repository License](https://img.shields.io/badge/license-apache2.0-brightgreen.svg)](LICENSE)|
 
 This Ansible role configures a full mesh WireGuard VPN between Ubuntu and Debian servers with comprehensive logging and security features. Perfect for creating secure networks between multiple servers with automatic key management and mesh topology setup.
 

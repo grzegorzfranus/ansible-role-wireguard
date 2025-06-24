@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Improved Job Organization** - Renamed workflow jobs for better semantic meaning and clarity
 - **Step Name Clarity** - Enhanced step descriptions with more specific and professional language
 
+### Fixed 🔧
+- **CI Badge Reference** - Updated README.md CI status badge to point to renamed `test-and-validation.yml` workflow
+- **Documentation Consistency** - Fixed broken badge link that was still referencing old `ci.yml` workflow file
+
 ### Workflow Improvements 🚀
 - **Galaxy Publishing**: Changed to `📦 Publish to Ansible Galaxy` with descriptive emoji
 - **Testing Pipeline**: Updated to `🧪 Test & Validation Pipeline` for professional appearance
@@ -30,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Workflow Consolidation**: Two professionally named workflows for complete CI/CD pipeline
 - **Consistency**: Aligned all workflow naming and emoji usage for cohesive presentation
 - **Documentation**: Enhanced workflow readability and maintenance across the board
+- **Badge Accuracy**: Ensured CI status badges reflect current workflow structure
 
 ## [1.4.4] - 2024-06-23
 
