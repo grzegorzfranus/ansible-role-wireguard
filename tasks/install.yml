@@ -21,6 +21,8 @@
     state: present
     update_cache: true
   register: wireguard_install_result
+  when: >
+    not ansible_check_mode
 
 # -----------------------------------------------------------------------------
 # 2. Load Kernel Module (skip in test containers)
@@ -32,7 +34,8 @@
     state: present
   register: wireguard_module_load
   when: >
-    not (wireguard_molecule_test_mode | default(false))
+    not (wireguard_molecule_test_mode | default(false)) and
+    not ansible_check_mode
 
 - name: 🧪 WireGuard | install | Skip kernel module loading in test environment
   ansible.builtin.debug:

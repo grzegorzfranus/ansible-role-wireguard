@@ -107,6 +107,8 @@ You can override any variable in your playbook:
     wireguard_network_base: "172.16.0.0/24"
     wireguard_port: 51821
     wireguard_persistent_keepalive: 30
+    # Optional: set public endpoint per host behind NAT
+    # wireguard_endpoint: "vpn.example.com"
   roles:
     - ansible-role-wireguard
 ```
@@ -117,7 +119,7 @@ You can override any variable in your playbook:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `wireguard_role_action` | Role execution control (all/install/config) | `"all"` |
+| `wireguard_role_action` | Role execution control (all/install/configure) | `"all"` |
 | `wireguard_inventory_group` | Inventory group name containing WireGuard servers | `"wireguardservers"` |
 
 ### Network Configuration
@@ -130,6 +132,7 @@ You can override any variable in your playbook:
 | `wireguard_persistent_keepalive` | Keepalive interval in seconds for NAT traversal | `25` |
 | `wireguard_dns_servers` | DNS servers for VPN interface (list) | `["1.1.1.1", "8.8.8.8"]` |
 | `wireguard_configure_dns` | Enable DNS configuration in interface | `false` |
+| `wireguard_endpoint` | Optional public endpoint (IP/DNS) per host | `""` |
 
 ### Interface Settings
 
@@ -169,6 +172,7 @@ You can override any variable in your playbook:
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `wireguard_enable_logging` | Enable dedicated WireGuard logging system | `true` |
+| `wireguard_logging_backend` | Logging backend: `rsyslog` or `journald` | `"rsyslog"` |
 | `wireguard_log_dir` | Directory path for WireGuard log files | `"/var/log/wireguard"` |
 | `wireguard_log_file` | Full path to main WireGuard log file | `"/var/log/wireguard/wireguard.log"` |
 | `wireguard_log_file_permissions` | File permissions for log files | `"0644"` |
@@ -201,6 +205,12 @@ You can override any variable in your playbook:
 | `wireguard_molecule_test_mode` | Enable container-compatible testing mode (internal variable) | `false` |
 
 **Note**: The `wireguard_molecule_test_mode` variable is used internally by Molecule tests to skip operations that don't work in containers (kernel modules, systemd services, etc.). This should not be modified in production environments.
+
+### Security Notes
+
+- Keys and PSKs are generated on-host and sensitive tasks are protected with `no_log: true`.
+- Avoid storing PSKs in persistent facts; only public keys are written on disk for discovery.
+- Prefer setting `wireguard_endpoint` when hosts are behind NAT or require DNS endpoints.
 
 ### Container Compatibility
 
@@ -446,7 +456,7 @@ ansible-role-wireguard/
 - `requirements` - System requirements verification
 - `install` - Package installation tasks
 - `configure` - Service configuration tasks
-- `config` - Configuration related tasks
+- `config` - Configuration related tasks (alias; prefer `configure`)
 - `logrotate` - Log rotation configuration tasks
 - `keys` - Key generation and management tasks
 - `service` - Service management and startup tasks

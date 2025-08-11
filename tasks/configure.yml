@@ -41,9 +41,16 @@
     mode: preserve
   when: >
     wireguard_backup_config | bool and
-    wireguard_config_file is exists and
-    not (wireguard_molecule_test_mode | default(false))
+    (wireguard_config_stat.stat.exists | default(false)) and
+    not (wireguard_molecule_test_mode | default(false)) and
+    not ansible_check_mode
   ignore_errors: true
+
+- name: WireGuard | configure | Check existing configuration presence
+  become: true
+  ansible.builtin.stat:
+    path: "{{ wireguard_config_file }}"
+  register: wireguard_config_stat
 
 - name: WireGuard | configure | Deploy WireGuard configuration file
   become: true
@@ -57,6 +64,8 @@
   notify:
     - restart wireguard
   register: wireguard_config_result
+  when: >
+    not ansible_check_mode
 
 - name: ✅ WireGuard | configure | Display configuration status
   ansible.builtin.debug:

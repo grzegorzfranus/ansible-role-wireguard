@@ -34,7 +34,8 @@
     daemon_reload: true
   when: >
     wireguard_enable_service | bool and
-    not (wireguard_molecule_test_mode | default(false))
+    not (wireguard_molecule_test_mode | default(false)) and
+    not ansible_check_mode
 
 - name: WireGuard | service | Start WireGuard service
   become: true
@@ -44,7 +45,8 @@
   when: >
     wireguard_start_service | bool and
     wireguard_service_enabled | bool and
-    not (wireguard_molecule_test_mode | default(false))
+    not (wireguard_molecule_test_mode | default(false)) and
+    not ansible_check_mode
   register: wireguard_service_start_result
 
 - name: 🧪 WireGuard | service | Skip service management in test environment

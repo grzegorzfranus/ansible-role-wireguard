@@ -33,6 +33,9 @@
   when: >
     not wireguard_private_key_stat.stat.exists
   register: wireguard_private_key_generated
+  no_log: true
+  args:
+    creates: "{{ wireguard_config_dir }}/privatekey"
 
 - name: WireGuard | keys | Set private key permissions
   become: true
@@ -52,6 +55,8 @@
   when: >
     wireguard_private_key_generated is changed or
     not wireguard_private_key_stat.stat.exists
+  args:
+    creates: "{{ wireguard_config_dir }}/publickey"
 
 - name: WireGuard | keys | Set public key permissions
   become: true
@@ -81,6 +86,9 @@
     wireguard_generate_psk | bool and
     not wireguard_psk_stat.stat.exists
   register: wireguard_psk_generated
+  no_log: true
+  args:
+    creates: "{{ wireguard_config_dir }}/psk"
 
 - name: WireGuard | keys | Set PSK permissions
   become: true
@@ -99,12 +107,14 @@
   register: wireguard_psk_content
   when: >
     wireguard_enable_psk | bool
+  no_log: true
 
 - name: WireGuard | keys | Store PSK in facts
   ansible.builtin.set_fact:
     wireguard_local_psk: "{{ wireguard_psk_content.content | b64decode | trim }}"
   when: >
     wireguard_enable_psk | bool
+  no_log: true
 
 # -----------------------------------------------------------------------------
 # 5. Fact Storage and Registration
@@ -114,6 +124,7 @@
   ansible.builtin.slurp:
     src: "{{ wireguard_config_dir }}/privatekey"
   register: wireguard_private_key_content
+  no_log: true
 
 - name: WireGuard | keys | Read public key
   become: true
@@ -125,6 +136,7 @@
   ansible.builtin.set_fact:
     wireguard_local_private_key: "{{ wireguard_private_key_content.content | b64decode | trim }}"
     wireguard_local_public_key: "{{ wireguard_public_key_content.content | b64decode | trim }}"
+  no_log: true
 
 - name: WireGuard | keys | Create host facts directory
   become: true
@@ -142,7 +154,8 @@
         "wireguard_psk": "{{ wireguard_local_psk }}"{% endif %}
       }
     dest: /etc/ansible/facts.d/wireguard.fact
-    mode: '0644'
+    mode: '0600'
+  no_log: true
 
 - name: WireGuard | keys | Refresh ansible facts
   ansible.builtin.setup:

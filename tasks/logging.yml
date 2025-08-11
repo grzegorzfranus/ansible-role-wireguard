@@ -25,7 +25,8 @@
     owner: root
     group: root
   when: >
-    not (wireguard_molecule_test_mode | default(false))
+    not (wireguard_molecule_test_mode | default(false)) and
+    wireguard_logging_backend == 'rsyslog'
 
 - name: WireGuard | logging | Configure systemd override for wg-quick logging
   become: true
@@ -44,7 +45,8 @@
     - reload systemd
     - restart wireguard
   when: >
-    not (wireguard_molecule_test_mode | default(false))
+    not (wireguard_molecule_test_mode | default(false)) and
+    wireguard_logging_backend == 'rsyslog'
 
 # -----------------------------------------------------------------------------
 # 2. Log Directory Management
@@ -78,7 +80,9 @@
     name: rsyslog
     state: present
   when: >
-    not (wireguard_molecule_test_mode | default(false))
+    not (wireguard_molecule_test_mode | default(false)) and
+    wireguard_logging_backend == 'rsyslog' and
+    not ansible_check_mode
 
 - name: WireGuard | logging | Ensure rsyslog.d directory exists
   become: true
@@ -88,6 +92,7 @@
     mode: '0755'
     owner: root
     group: root
+  when: wireguard_logging_backend == 'rsyslog'
 
 - name: WireGuard | logging | Configure rsyslog for WireGuard
   become: true
@@ -100,6 +105,7 @@
     backup: "{{ not (wireguard_molecule_test_mode | default(false)) }}"
   notify:
     - restart rsyslog
+  when: wireguard_logging_backend == 'rsyslog'
 
 # -----------------------------------------------------------------------------
 # 4. Log Rotation Configuration
@@ -113,6 +119,7 @@
     owner: "{{ wireguard_log_user }}"
     group: "{{ wireguard_log_group }}"
   when: >
+    wireguard_logging_backend == 'rsyslog' and
     wireguard_configure_logrotate | bool and
     wireguard_logrotate_options.archive_directory_path is defined
 
@@ -126,6 +133,7 @@
     group: root
     backup: "{{ not (wireguard_molecule_test_mode | default(false)) }}"
   when: >
+    wireguard_logging_backend == 'rsyslog' and
     wireguard_configure_logrotate | bool
 
 - name: ✅ WireGuard | logging | Display logging configuration status
@@ -135,6 +143,6 @@
       - "📝 Log directory: {{ wireguard_log_dir }}"
       - "📄 Log file: {{ wireguard_log_file }}"
       - "🔄 Syslog identifier: {{ wireguard_syslog_identifier }}"
-      - "📊 Logrotate: {% if wireguard_configure_logrotate %}enabled{% else %}disabled{% endif %}"
-      - "🧪 RSyslog: {% if wireguard_molecule_test_mode | default(false) %}configured (test mode){% else %}configured{% endif %}"
+      - "📊 Logrotate: {% if wireguard_logging_backend == 'rsyslog' and wireguard_configure_logrotate %}enabled{% else %}disabled{% endif %}"
+      - "🧪 Backend: {{ wireguard_logging_backend }}"
   changed_when: false

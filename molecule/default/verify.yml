@@ -74,7 +74,8 @@
         msg:
           - "✅ WireGuard 'wg' binary found at: /usr/bin/wg"
           - "✅ WireGuard 'wg-quick' binary found at: /usr/bin/wg-quick"
-      when: _wg_binary_result_.stat.exists and _wg_quick_binary_result_.stat.exists
+      when: >
+        _wg_binary_result_.stat.exists and _wg_quick_binary_result_.stat.exists
 
     - name: 🧪 Verify | Assert WireGuard binaries exist
       ansible.builtin.assert:
@@ -184,7 +185,8 @@
         path: "{{ wireguard_config_dir }}/psk"
         checksum_algorithm: sha256
       register: _psk_result_
-      when: wireguard_enable_psk | default(false)
+      when: >
+        wireguard_enable_psk | default(false)
 
     - name: 🧪 Verify | Assert PSK exists when enabled
       ansible.builtin.assert:
@@ -192,7 +194,8 @@
           - _psk_result_.stat.exists
         fail_msg: "❌ WireGuard PSK not found when enabled"
         success_msg: "✅ WireGuard PSK verified"
-      when: wireguard_enable_psk | default(false)
+      when: >
+        wireguard_enable_psk | default(false)
 
 # -----------------------------------------------------------------------------
 # 5. Logging Setup Verification
@@ -202,7 +205,8 @@
         path: "{{ wireguard_log_dir }}"
         checksum_algorithm: sha256
       register: _logdir_result_
-      when: wireguard_enable_logging | default(false)
+      when: >
+        wireguard_enable_logging | default(false)
 
     - name: 🧪 Verify | Assert log directory exists when logging enabled
       ansible.builtin.assert:
@@ -211,7 +215,8 @@
           - _logdir_result_.stat.isdir
         fail_msg: "❌ WireGuard log directory not found"
         success_msg: "✅ WireGuard log directory verified"
-      when: wireguard_enable_logging | default(false)
+      when: >
+        wireguard_enable_logging | default(false)
 
     - name: 🔍 Verify | Check log directory permissions
       ansible.builtin.file:
@@ -221,14 +226,16 @@
         group: "root"
         mode: "{{ wireguard_log_dir_permissions }}"
       register: _logdir_perms_result_
-      when: wireguard_enable_logging | default(false)
+      when: >
+        wireguard_enable_logging | default(false)
 
     - name: 🔍 Verify | Check if rsyslog configuration exists
       ansible.builtin.stat:
         path: "/etc/rsyslog.d/{{ wireguard_rsyslog_config_file }}"
         checksum_algorithm: sha256
       register: _rsyslog_result_
-      when: wireguard_enable_logging | default(false)
+      when: >
+        wireguard_enable_logging | default(false)
 
     - name: 🧪 Verify | Assert rsyslog configuration exists when logging enabled
       ansible.builtin.assert:
@@ -236,14 +243,16 @@
           - _rsyslog_result_.stat.exists
         fail_msg: "❌ WireGuard rsyslog configuration not found"
         success_msg: "✅ WireGuard rsyslog configuration verified"
-      when: wireguard_enable_logging | default(false)
+      when: >
+        wireguard_enable_logging | default(false)
 
     - name: 🔍 Verify | Check if logrotate configuration exists
       ansible.builtin.stat:
         path: "/etc/logrotate.d/wireguard"
         checksum_algorithm: sha256
       register: _logrotate_result_
-      when: wireguard_configure_logrotate | default(false)
+      when: >
+        wireguard_configure_logrotate | default(false)
 
     - name: 🧪 Verify | Assert logrotate configuration exists when enabled
       ansible.builtin.assert:
@@ -251,7 +260,8 @@
           - _logrotate_result_.stat.exists
         fail_msg: "❌ WireGuard logrotate configuration not found"
         success_msg: "✅ WireGuard logrotate configuration verified"
-      when: wireguard_configure_logrotate | default(false)
+      when: >
+        wireguard_configure_logrotate | default(false)
 
 # -----------------------------------------------------------------------------
 # 6. Configuration Content Verification
@@ -282,7 +292,8 @@
       ansible.builtin.stat:
         path: "/lib/systemd/system/wg-quick@.service"
       register: _service_template_result_
-      when: ansible_service_mgr == 'systemd'
+      when: >
+        ansible_service_mgr == 'systemd'
 
     - name: 📊 Verify | Show service verification results
       ansible.builtin.debug:

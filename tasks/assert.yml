@@ -59,6 +59,21 @@
     fail_msg: "❌ Invalid network configuration. Check network_base format (e.g., '10.0.0.0/24') and network_prefix (e.g., '10.0.0')"
     success_msg: "✅ Network configuration is valid"
 
+- name: 🔍 WireGuard | assert | Validate WireGuard port not in use
+  ansible.builtin.command: bash -c "ss -lun | awk '{print $5}' | grep -E '(^|:){{ wireguard_port }}$' || true"
+  register: wireguard_port_check
+  changed_when: false
+  failed_when: false
+
+- name: 🧪 WireGuard | assert | Port availability check
+  ansible.builtin.assert:
+    that:
+      - wireguard_port_check.stdout | trim == ''
+    fail_msg: "❌ UDP port {{ wireguard_port }} appears to be in use on {{ inventory_hostname }}"
+    success_msg: "✅ UDP port {{ wireguard_port }} is free"
+  when: >
+    not ansible_check_mode
+
 # -----------------------------------------------------------------------------
 # 3. Service and Interface Validation
 # -----------------------------------------------------------------------------

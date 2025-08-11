@@ -23,10 +23,10 @@
 # -----------------------------------------------------------------------------
 # Role execution control and basic service configuration.
 
-# Define which parts of the role to execute (Options: 'all', 'install', 'config')
+# Define which parts of the role to execute (Options: 'all', 'install', 'configure')
 # - 'all': Execute complete role (install packages + configure + start service)
 # - 'install': Only install WireGuard packages and dependencies
-# - 'config': Only configure WireGuard (assumes packages already installed)
+# - 'configure': Only configure WireGuard (assumes packages already installed)
 wireguard_role_action: "all"
 
 # Enable/disable WireGuard service on boot
@@ -57,6 +57,12 @@ wireguard_network_prefix: "10.0.0"
 # Default 51820 is standard, change if port conflicts exist
 # Range: 1024-65535 (avoid well-known ports below 1024)
 wireguard_port: 51820
+
+# Public endpoint for each host (IP or DNS). Overrides autodetected address when set.
+# Recommended to set per-host in inventory when behind NAT or using DNS.
+# Example per-host override:
+# host_vars/server1.yml: wireguard_endpoint: "vpn.example.com"
+wireguard_endpoint: ""
 
 # Keep alive interval for peers (seconds)
 # Helps maintain connections through NAT/firewalls
@@ -168,6 +174,10 @@ wireguard_service_timeout: 30
 # Creates separate log files and configures rsyslog integration
 wireguard_enable_logging: true
 
+# Select logging backend: "rsyslog" (file-based logs) or "journald" (systemd journal only)
+# When set to "journald", rsyslog and logrotate configuration are skipped.
+wireguard_logging_backend: "rsyslog"
+
 # Directory for WireGuard log files and archives
 # Must be writable by syslog user for proper log file creation
 wireguard_log_dir: "/var/log/wireguard"
@@ -213,3 +223,6 @@ wireguard_logrotate_options:
   create_group: "{{ wireguard_log_group }}"                  # Group of newly created log file (OS-specific)
   dateext: true                                               # Add date extension to rotated log files (YYYY-MM-DD)
   archive_directory_path: "{{ wireguard_log_dir }}/archived" # Directory where archived/rotated logs are stored
+
+# Enable additional debug output (no secrets). Debug tasks are skipped when false.
+wireguard_debug: false

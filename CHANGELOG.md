@@ -1,9 +1,28 @@
 # Changelog
 
-All notable changes to this WireGuard Mesh VPN role will be documented in this file.
+All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.4.6] - 2025-08-11
+
+### Fixed 🔧
+- Hardened secrets handling in `tasks/keys.yml` with `no_log: true` on private key/PSK generation, slurp, and fact-setting tasks.
+- Secured on-host facts file permissions to `0600` for `/etc/ansible/facts.d/wireguard.fact`.
+
+### Changed 🔄
+- Documentation consistency: clarified role action naming to prefer `configure` over `config` in `README.md` and references.
+- Minor wording adjustments in docs for clarity.
+
+### Added ✅
+- Endpoint configurability via `wireguard_endpoint` for NAT/DNS use-cases.
+- Logging backend selection with `wireguard_logging_backend` (`rsyslog`|`journald`).
+- Check-mode safety for package, sysctl, module load, templating, and service operations.
+- Port conflict validation using `ss` during assertions.
+- Kernel minimum validation now uses per-OS `wireguard_minimum_kernel_version`.
+- Backup logic fixed to use a proper `stat` check for existing config.
+- Readme updates: endpoint usage, logging backend, and security notes.
 
 ## [1.4.5] - 2025-06-24
 
@@ -515,7 +534,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configuration backup before changes
 - Detailed logging and status reporting with emojis
 - English-only documentation and comments
-- Role action control (all/install/config modes)
+- Role action control (all/install/configure modes)
 
 ### Security Features 🔐
 - Secure key file permissions (600 for private, 644 for public)

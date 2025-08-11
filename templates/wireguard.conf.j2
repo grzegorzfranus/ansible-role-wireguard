@@ -33,7 +33,7 @@ DNS = {{ wireguard_dns_servers | join(', ') }}
 {% for peer_host in groups[wireguard_inventory_group] %}
 {% if peer_host != inventory_hostname %}
 {% set peer_ip = wireguard_network_prefix + '.' + (groups[wireguard_inventory_group].index(peer_host) + 1) | string %}
-{% set peer_public_ip = hostvars[peer_host]['ansible_default_ipv4']['address'] %}
+{% set peer_public_ip = (hostvars[peer_host]['wireguard_endpoint'] if (hostvars[peer_host].get('wireguard_endpoint') and (hostvars[peer_host]['wireguard_endpoint'] | string | length > 0)) else hostvars[peer_host]['ansible_default_ipv4']['address']) %}
 {% set peer_public_key = hostvars[peer_host]['ansible_local']['wireguard']['wireguard_public_key'] %}
 
 # Peer: {{ peer_host }}
