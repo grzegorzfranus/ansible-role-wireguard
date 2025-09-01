@@ -24,10 +24,11 @@
 # -----------------------------------------------------------------------------
 - name: WireGuard | configure | Gather public keys from all mesh peers
   ansible.builtin.set_fact:
-    wireguard_peer_public_keys: "{{ wireguard_peer_public_keys | default({}) | combine({item: hostvars[item]['ansible_local']['wireguard']['wireguard_public_key']}) }}"
+    wireguard_peer_public_keys: "{{ wireguard_peer_public_keys | default({}) | combine({item: hostvars[item]['wireguard_local_public_key']}) }}"
   loop: "{{ groups[wireguard_inventory_group] }}"
   when: >
-    item != inventory_hostname
+    item != inventory_hostname and
+    hostvars[item].wireguard_local_public_key is defined
 
 # -----------------------------------------------------------------------------
 # 3. Configuration File Deployment

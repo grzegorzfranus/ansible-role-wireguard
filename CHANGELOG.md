@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.7] - 2025-09-01
+
+### Fixed 🔧
+- Peer public key discovery during configuration: switched from `ansible_local` lookup to in-memory facts (`hostvars[*].wireguard_local_public_key`) and guarded undefined peers to prevent failures when running the full group.
+
+### Changed 🔄
+- RSyslog routing template now captures wg-quick unit logs by matching `programname == 'wg-quick'` and `syslogtag` starting with `wg-quick@{{ wireguard_interface }}` in addition to the configured `wireguard_syslog_identifier`.
+- README requirements: clarified that the role must be executed against the entire `wireguardservers` group (single-host runs are not supported).
+
 ## [1.4.6] - 2025-08-11
 
 ### Fixed 🔧

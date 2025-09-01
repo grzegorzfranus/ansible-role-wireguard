@@ -38,6 +38,7 @@ Server 1 (10.0.0.1) ←→ Server 2 (10.0.0.2)
 - **Kernel**: 5.6+ (for native WireGuard support)
 - **Network**: All servers must be able to reach each other on UDP port 51820
 - **Privileges**: sudo/root access on target hosts
+ - **Execution**: run the play against the entire `wireguardservers` group; single-host runs are not supported
 
 ### Supported operating systems
 List of officially supported operating systems:

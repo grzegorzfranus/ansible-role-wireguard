@@ -7,8 +7,12 @@
 # for better log organization and monitoring.
 
 # Redirect WireGuard logs to dedicated file
-# Match logs by program name and redirect to the specified log file
-:programname, isequal, "{{ wireguard_syslog_identifier }}" {{ wireguard_log_file }}
+# Match by explicit SyslogIdentifier, wg-quick program name, or unit syslog tag
+if (
+  $programname == '{{ wireguard_syslog_identifier }}' or
+  $programname == 'wg-quick' or
+  $syslogtag startswith 'wg-quick@{{ wireguard_interface }}['
+) then {{ wireguard_log_file }}
 
 # Stop processing these logs further to prevent duplication
 & stop
