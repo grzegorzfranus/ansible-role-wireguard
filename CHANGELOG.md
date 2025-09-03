@@ -10,22 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added ✅
 - Comprehensive variable validation for all role parameters in assert.yml
 - Debugging section in README with wireguard_debug documentation
-
-### Fixed 🔧
-- Respect wireguard_generate_keys setting with proper failure handling
-- Use wireguard_service_timeout for service operations
-- Missing type checks and range validations for network, service, and logging parameters
-
-## [1.4.8] - 2025-09-03
-
-### Added ✅
 - Cluster-wide PSK discovery and consolidation with runtime-only distribution
+- Flow section in tasks/psk.yml header documenting PSK discovery, aggregation, distribution, and report
 
 ### Changed 🔄
 - Stop persisting PSK to files and host-local facts; use in-memory facts and template injection
+- Standardized all task names in tasks/ to the scheme "WireGuard | <section> | <description>" (removed emojis from task names)
+- Updated Flow headers in tasks/main.yml and tasks/keys.yml to reflect runtime-only PSK handling in tasks/psk.yml
 
 ### Fixed 🔧
 - Idempotency for PSK handling across mesh nodes, including consistent reuse and divergence resolution
+- Respect wireguard_generate_keys setting with proper failure handling
+- Use wireguard_service_timeout for service operations
+- Missing type checks and range validations for network, service, and logging parameters
+- Lint error in tasks/psk.yml (removed trailing blank lines at EOF)
 
 ## [1.4.7] - 2025-09-01
 

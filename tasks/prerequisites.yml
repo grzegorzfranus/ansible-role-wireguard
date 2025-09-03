@@ -36,12 +36,12 @@
 # -----------------------------------------------------------------------------
 # 2. System Service Validation
 # -----------------------------------------------------------------------------
-- name: 🔍 WireGuard | prerequisites | Check kernel version
+- name: WireGuard | prerequisites | Check kernel version
   ansible.builtin.command: uname -r
   register: kernel_version
   changed_when: false
 
-- name: 🧪 WireGuard | prerequisites | Verify kernel compatibility
+- name: WireGuard | prerequisites | Verify kernel compatibility
   ansible.builtin.assert:
     that:
       - ansible_kernel is version(wireguard_minimum_kernel_version, '>=')
@@ -64,7 +64,7 @@
     not (wireguard_molecule_test_mode | default(false)) and
     not ansible_check_mode
 
-- name: 🧪 WireGuard | prerequisites | Skip IP forwarding in test environment
+- name: WireGuard | prerequisites | Skip IP forwarding in test environment
   ansible.builtin.debug:
     msg: "⚠️ Skipping IP forwarding configuration in test container environment"
   when: >
@@ -74,7 +74,7 @@
 # -----------------------------------------------------------------------------
 # 4. Kernel Module Verification (skip in test containers)
 # -----------------------------------------------------------------------------
-- name: 🔍 WireGuard | prerequisites | Check WireGuard kernel module availability
+- name: WireGuard | prerequisites | Check WireGuard kernel module availability
   become: true
   community.general.modprobe:
     name: wireguard
@@ -84,14 +84,14 @@
   when: >
     not (wireguard_molecule_test_mode | default(false))
 
-- name: ⚠️ WireGuard | prerequisites | Module availability notice
+- name: WireGuard | prerequisites | Module availability notice
   ansible.builtin.debug:
     msg: "⚠️ WireGuard kernel module not yet available - will be loaded after package installation"
   when: >
     wireguard_module_check is failed and
     not (wireguard_molecule_test_mode | default(false))
 
-- name: 🧪 WireGuard | prerequisites | Skip kernel module check in test environment
+- name: WireGuard | prerequisites | Skip kernel module check in test environment
   ansible.builtin.debug:
     msg: "⚠️ Skipping WireGuard kernel module verification in test container environment"
   when: >

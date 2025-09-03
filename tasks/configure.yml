@@ -68,7 +68,7 @@
   when: >
     not ansible_check_mode
 
-- name: ✅ WireGuard | configure | Display configuration status
+- name: WireGuard | configure | Display configuration status
   ansible.builtin.debug:
     msg:
       - "✅ WireGuard configuration completed for {{ inventory_hostname }}"

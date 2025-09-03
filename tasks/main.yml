@@ -13,6 +13,7 @@
 # 4. Check System Prerequisites
 # 5. Install WireGuard Packages
 # 6. Generate and Manage Cryptographic Keys
+# 6.1 Consolidate Cluster PSK (runtime-only)
 # 7. Configure WireGuard Interface
 # 8. Configure Logging (Optional)
 # 9. Start and Enable Service
@@ -21,7 +22,7 @@
 # -----------------------------------------------------------------------------
 # 1. Operating System Validation
 # -----------------------------------------------------------------------------
-- name: 🧪 WireGuard | assert | Validate supported operating system
+- name: WireGuard | assert | Validate supported operating system
   ansible.builtin.fail:
     msg: "❌ Unsupported OS: {{ ansible_distribution }} {{ ansible_distribution_version }}. This role supports Ubuntu 22.04, 24.04 and Debian 12."
   when: >
@@ -36,7 +37,7 @@
 # -----------------------------------------------------------------------------
 # 2. OS-Specific Variables
 # -----------------------------------------------------------------------------
-- name: 📂 WireGuard | include_vars | Gather OS specific variables
+- name: WireGuard | include_vars | Gather OS specific variables
   ansible.builtin.include_vars: "{{ lookup('first_found', params) }}"
   vars:
     params:
@@ -58,7 +59,7 @@
 # -----------------------------------------------------------------------------
 # 3. Variable Validation
 # -----------------------------------------------------------------------------
-- name: 🧪 WireGuard | assert | Validate role variables and requirements
+- name: WireGuard | assert | Validate role variables and requirements
   ansible.builtin.include_tasks: assert.yml
   run_once: true
   tags:
@@ -69,7 +70,7 @@
 # -----------------------------------------------------------------------------
 # 4. System Prerequisites
 # -----------------------------------------------------------------------------
-- name: 🛠️ WireGuard | prerequisites | Verify system prerequisites
+- name: WireGuard | prerequisites | Verify system prerequisites
   ansible.builtin.include_tasks: prerequisites.yml
   when: >
     wireguard_role_action in ['all', 'prerequisites']
@@ -80,7 +81,7 @@
 # -----------------------------------------------------------------------------
 # 5. Package Installation
 # -----------------------------------------------------------------------------
-- name: 📦 WireGuard | install | Install WireGuard package
+- name: WireGuard | install | Install WireGuard package
   ansible.builtin.include_tasks: install.yml
   when: >
     wireguard_role_action in ['all', 'install']
@@ -91,7 +92,7 @@
 # -----------------------------------------------------------------------------
 # 6. Cryptographic Key Management
 # -----------------------------------------------------------------------------
-- name: 🔐 WireGuard | keys | Generate and manage WireGuard keys
+- name: WireGuard | keys | Generate and manage WireGuard keys
   ansible.builtin.include_tasks: keys.yml
   when: >
     wireguard_role_action in ['all', 'configure']
@@ -104,7 +105,7 @@
 # -----------------------------------------------------------------------------
 # 6.1. Cluster PSK Management (runtime-only)
 # -----------------------------------------------------------------------------
-- name: 🔑 WireGuard | psk | Consolidate cluster PSK (runtime-only)
+- name: WireGuard | psk | Consolidate cluster PSK (runtime-only)
   ansible.builtin.include_tasks: psk.yml
   when: >
     wireguard_role_action in ['all', 'configure'] and
@@ -118,7 +119,7 @@
 # -----------------------------------------------------------------------------
 # 7. Service Configuration
 # -----------------------------------------------------------------------------
-- name: 🌐 WireGuard | configure | Configure WireGuard service
+- name: WireGuard | configure | Configure WireGuard service
   ansible.builtin.include_tasks: configure.yml
   when: >
     wireguard_role_action in ['all', 'configure']
@@ -129,7 +130,7 @@
 # -----------------------------------------------------------------------------
 # 8. Logging Configuration (Optional)
 # -----------------------------------------------------------------------------
-- name: 📝 WireGuard | logging | Configure logging for WireGuard service
+- name: WireGuard | logging | Configure logging for WireGuard service
   ansible.builtin.include_tasks: logging.yml
   when: >
     wireguard_role_action in ['all', 'configure', 'logging'] and
@@ -141,7 +142,7 @@
 # -----------------------------------------------------------------------------
 # 9. Service Management
 # -----------------------------------------------------------------------------
-- name: 🚀 WireGuard | service | Manage WireGuard service
+- name: WireGuard | service | Manage WireGuard service
   ansible.builtin.include_tasks: service.yml
   when: >
     wireguard_role_action in ['all', 'configure']

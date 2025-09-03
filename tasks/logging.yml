@@ -136,7 +136,7 @@
     wireguard_logging_backend == 'rsyslog' and
     wireguard_configure_logrotate | bool
 
-- name: ✅ WireGuard | logging | Display logging configuration status
+- name: WireGuard | logging | Display logging configuration status
   ansible.builtin.debug:
     msg:
       - "✅ WireGuard logging configured successfully"

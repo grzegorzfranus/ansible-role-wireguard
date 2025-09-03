@@ -10,14 +10,14 @@
 # 1. Key Directory Management
 # 2. Private Key Generation
 # 3. Public Key Derivation
-# 4. Pre-Shared Key Management (PSK) - Enhanced Security
+# 4. Pre-Shared Key Management (runtime-only in tasks/psk.yml)
 # 5. Fact Storage and Registration
 # =============================================================================
 
 # -----------------------------------------------------------------------------
 # 1. Key Directory Management
 # -----------------------------------------------------------------------------
-- name: 🔍 WireGuard | keys | Check if private key exists
+- name: WireGuard | keys | Check if private key exists
   become: true
   ansible.builtin.stat:
     path: "{{ wireguard_config_dir }}/privatekey"
@@ -26,7 +26,7 @@
 # -----------------------------------------------------------------------------
 # 1.a Guard: fail if keys are required but generation is disabled
 # -----------------------------------------------------------------------------
-- name: 🧪 WireGuard | keys | Validate key presence when generation disabled
+- name: WireGuard | keys | Validate key presence when generation disabled
   ansible.builtin.fail:
     msg: "❌ Private key not found at {{ wireguard_config_dir }}/privatekey and wireguard_generate_keys is false. Generate keys manually or enable wireguard_generate_keys."
   when: >
@@ -128,6 +128,6 @@
   ansible.builtin.setup:
     filter: "ansible_local"
 
-- name: ✅ WireGuard | keys | Display key generation status
+- name: WireGuard | keys | Display key generation status
   ansible.builtin.debug:
     msg: "✅ WireGuard keys managed for host {{ inventory_hostname }}"

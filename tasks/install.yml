@@ -37,7 +37,7 @@
     not (wireguard_molecule_test_mode | default(false)) and
     not ansible_check_mode
 
-- name: 🧪 WireGuard | install | Skip kernel module loading in test environment
+- name: WireGuard | install | Skip kernel module loading in test environment
   ansible.builtin.debug:
     msg: "⚠️ Skipping WireGuard kernel module loading in test container environment"
   when: >
@@ -46,20 +46,20 @@
 # -----------------------------------------------------------------------------
 # 3. Verify Installation
 # -----------------------------------------------------------------------------
-- name: 🧪 WireGuard | install | Verify WireGuard installation
+- name: WireGuard | install | Verify WireGuard installation
   ansible.builtin.command: wg --version
   register: wireguard_version
   changed_when: false
 
-- name: ✅ WireGuard | install | Display WireGuard version
+- name: WireGuard | install | Display WireGuard version
   ansible.builtin.debug:
     msg: "✅ WireGuard successfully installed: {{ wireguard_version.stdout }}"
 
-- name: 🔍 WireGuard | install | Ensure wg-quick is available
+- name: WireGuard | install | Ensure wg-quick is available
   ansible.builtin.command: which wg-quick
   register: wg_quick_path
   changed_when: false
 
-- name: ✅ WireGuard | install | Verify wg-quick availability
+- name: WireGuard | install | Verify wg-quick availability
   ansible.builtin.debug:
     msg: "✅ wg-quick available at: {{ wg_quick_path.stdout }}"
