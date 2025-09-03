@@ -1,0 +1,181 @@
+---
+# =============================================================================
+# Ansible Role: WireGuard Mesh - Cluster PSK Management (Runtime-Only)
+# =============================================================================
+# This task file discovers existing PSKs across the mesh, validates consistency,
+# and selects a single cluster-wide PSK. If none exist or multiple different
+# values are found, it generates a new PSK using `wg genpsk` and distributes it
+# as an in-memory fact (no files, no vault). Idempotent across runs by reading
+# PSK from the rendered WireGuard configuration when present.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Per-host PSK discovery (prefer config, fallback to legacy sources)
+# -----------------------------------------------------------------------------
+- name: 🔍 WireGuard | psk | Check existing WireGuard configuration file
+  become: true
+  ansible.builtin.stat:
+    path: "{{ wireguard_config_file }}"
+  register: wireguard_psk_config_stat
+  when: >
+    wireguard_enable_psk | bool
+
+- name: 🔍 WireGuard | psk | Read WireGuard configuration for PSK parsing
+  become: true
+  ansible.builtin.slurp:
+    src: "{{ wireguard_config_file }}"
+  register: wireguard_psk_config_content
+  when: >
+    wireguard_enable_psk | bool and
+    wireguard_psk_config_stat.stat.exists
+  no_log: true
+
+- name: 🧪 WireGuard | psk | Parse PSK matches from configuration content
+  ansible.builtin.set_fact:
+    wireguard_psk_matches: "{{ (wireguard_psk_config_content.content | b64decode) | regex_findall('^\\s*PresharedKey\\s*=\\s*(\\S+)', multiline=True) }}"
+  when: >
+    wireguard_enable_psk | bool and
+    wireguard_psk_config_stat.stat.exists
+  no_log: true
+
+- name: 🧪 WireGuard | psk | Set existing PSK from configuration when present
+  ansible.builtin.set_fact:
+    wireguard_existing_psk: "{{ wireguard_psk_matches[0] }}"
+  when: >
+    wireguard_enable_psk | bool and
+    wireguard_psk_config_stat.stat.exists and
+    wireguard_psk_matches is defined and
+    (wireguard_psk_matches | length) > 0
+  no_log: true
+
+- name: "🔍 WireGuard | psk | Fallback: detect PSK from ansible_local persistent facts (legacy)"
+  ansible.builtin.set_fact:
+    wireguard_existing_psk: "{{ ansible_local.wireguard.wireguard_psk }}"
+  when: >
+    wireguard_enable_psk | bool and
+    (wireguard_existing_psk is not defined) and
+    (ansible_local is defined and
+     ansible_local.wireguard is defined and
+     ansible_local.wireguard.wireguard_psk is defined and
+     (ansible_local.wireguard.wireguard_psk | string | length) > 0)
+  no_log: true
+
+- name: "🔍 WireGuard | psk | Fallback: detect PSK from legacy file {{ wireguard_config_dir }}/psk"
+  become: true
+  ansible.builtin.stat:
+    path: "{{ wireguard_config_dir }}/psk"
+  register: wireguard_psk_legacy_file_stat
+  when: >
+    wireguard_enable_psk | bool and
+    (wireguard_existing_psk is not defined)
+
+- name: 🔍 WireGuard | psk | Read legacy PSK file when present
+  become: true
+  ansible.builtin.slurp:
+    src: "{{ wireguard_config_dir }}/psk"
+  register: wireguard_psk_legacy_file_content
+  when: >
+    wireguard_enable_psk | bool and
+    (wireguard_existing_psk is not defined) and
+    wireguard_psk_legacy_file_stat.stat.exists
+  no_log: true
+
+- name: 🧪 WireGuard | psk | Set legacy PSK from file content
+  ansible.builtin.set_fact:
+    wireguard_existing_psk: "{{ wireguard_psk_legacy_file_content.content | b64decode | trim }}"
+  when: >
+    wireguard_enable_psk | bool and
+    (wireguard_existing_psk is not defined) and
+    wireguard_psk_legacy_file_stat.stat.exists
+  no_log: true
+
+# -----------------------------------------------------------------------------
+# 2. Cluster aggregation and decision (run once)
+# -----------------------------------------------------------------------------
+- name: 🔎 WireGuard | psk | Aggregate existing PSKs across cluster
+  ansible.builtin.set_fact:
+    wireguard_all_existing_psks: "{{ groups[wireguard_inventory_group]
+      | map('extract', hostvars, 'wireguard_existing_psk')
+      | select('defined')
+      | select('truthy')
+      | list }}"
+  run_once: true
+
+- name: 🔎 WireGuard | psk | Compute unique PSKs set
+  ansible.builtin.set_fact:
+    wireguard_unique_psks: "{{ wireguard_all_existing_psks | unique }}"
+  run_once: true
+
+- name: 🧪 WireGuard | psk | Validate check-mode constraints before generation
+  ansible.builtin.fail:
+    msg: "❌ PSK generation required but running in --check mode. Rerun without --check to generate a new cluster PSK."
+  when: >
+    wireguard_enable_psk | bool and
+    ansible_check_mode and
+    ((wireguard_unique_psks | length == 0) or (wireguard_unique_psks | length > 1))
+  run_once: true
+
+- name: 🔐 WireGuard | psk | Decide on cluster PSK (reuse or generate)
+  ansible.builtin.set_fact:
+    wireguard_chosen_psk: >-
+      {{
+        (wireguard_unique_psks | length == 1)
+        | ternary(
+            (wireguard_unique_psks | first),
+            omit
+          )
+      }}
+  when: >
+    wireguard_enable_psk | bool and
+    (wireguard_unique_psks | length == 1)
+  run_once: true
+  no_log: true
+
+- name: 🔐 WireGuard | psk | Generate new cluster PSK when missing or divergent
+  ansible.builtin.command: wg genpsk
+  register: wireguard_new_psk_cmd
+  changed_when: true
+  when: >
+    wireguard_enable_psk | bool and
+    not ansible_check_mode and
+    ((wireguard_unique_psks | length == 0) or (wireguard_unique_psks | length > 1))
+  delegate_to: "{{ groups[wireguard_inventory_group][0] }}"
+  run_once: true
+  no_log: true
+
+- name: 🔐 WireGuard | psk | Select generated PSK as cluster PSK
+  ansible.builtin.set_fact:
+    wireguard_chosen_psk: "{{ (wireguard_new_psk_cmd.stdout | default('') | trim) }}"
+  when: >
+    wireguard_enable_psk | bool and
+    (wireguard_new_psk_cmd is defined) and
+    (wireguard_new_psk_cmd.stdout is defined) and
+    ((wireguard_new_psk_cmd.stdout | trim) | length > 0)
+  run_once: true
+  no_log: true
+
+# -----------------------------------------------------------------------------
+# 3. Distribute selected PSK as in-memory fact to all hosts
+# -----------------------------------------------------------------------------
+- name: 🚚 WireGuard | psk | Distribute cluster PSK to all hosts (in-memory)
+  ansible.builtin.set_fact:
+    wireguard_cluster_psk: "{{ wireguard_chosen_psk }}"
+  delegate_to: "{{ item }}"
+  delegate_facts: true
+  loop: "{{ groups[wireguard_inventory_group] }}"
+  when: >
+    wireguard_enable_psk | bool and
+    (wireguard_chosen_psk is defined) and
+    (wireguard_chosen_psk | string | length > 0)
+  no_log: true
+
+- name: ✅ WireGuard | psk | Report PSK consolidation result (non-sensitive)
+  ansible.builtin.debug:
+    msg:
+      - "✅ PSK consolidation complete"
+      - "🔢 Unique PSKs found: {{ wireguard_unique_psks | length | default(0) }}"
+      - "📦 PSK distributed to hosts: {{ groups[wireguard_inventory_group] | length }}"
+  run_once: true
+  changed_when: false
+
+

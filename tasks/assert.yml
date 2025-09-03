@@ -56,6 +56,10 @@
       - wireguard_port is number
       - wireguard_port >= 1024
       - wireguard_port <= 65535
+      - wireguard_persistent_keepalive is defined
+      - wireguard_persistent_keepalive is number
+      - wireguard_persistent_keepalive >= 10
+      - wireguard_persistent_keepalive <= 60
     fail_msg: "❌ Invalid network configuration. Check network_base format (e.g., '10.0.0.0/24') and network_prefix (e.g., '10.0.0')"
     success_msg: "✅ Network configuration is valid"
 
@@ -84,6 +88,10 @@
       - wireguard_interface is string
       - wireguard_interface | length > 0
       - wireguard_interface | regex_search('^[a-zA-Z][a-zA-Z0-9]*$')
+      - wireguard_mtu is defined
+      - wireguard_mtu is number
+      - wireguard_mtu >= 1280
+      - wireguard_mtu <= 1500
     fail_msg: "❌ Invalid interface name: {{ wireguard_interface }}"
     success_msg: "✅ Interface name is valid"
 
@@ -97,6 +105,14 @@
       - wireguard_service_enabled is boolean
       - wireguard_restart_on_change is defined
       - wireguard_restart_on_change is boolean
+      - wireguard_enable_service is defined
+      - wireguard_enable_service is boolean
+      - wireguard_start_service is defined
+      - wireguard_start_service is boolean
+      - wireguard_service_timeout is defined
+      - wireguard_service_timeout is number
+      - wireguard_service_timeout >= 10
+      - wireguard_service_timeout <= 60
     fail_msg: "❌ Invalid service configuration"
     success_msg: "✅ Service configuration is valid"
 
@@ -107,6 +123,17 @@
       - wireguard_config_dir is string
       - wireguard_config_dir | length > 0
       - wireguard_config_dir.startswith('/')
+      - wireguard_config_permissions is defined
+      - wireguard_config_permissions is string
+      - wireguard_config_permissions | regex_search('^0[0-7]{3}$')
+      - wireguard_private_key_permissions is defined
+      - wireguard_private_key_permissions is string
+      - wireguard_private_key_permissions | regex_search('^0[0-7]{3}$')
+      - wireguard_public_key_permissions is defined
+      - wireguard_public_key_permissions is string
+      - wireguard_public_key_permissions | regex_search('^0[0-7]{3}$')
+      - wireguard_backup_config is defined
+      - wireguard_backup_config is boolean
     fail_msg: "❌ Invalid configuration directory: {{ wireguard_config_dir }}"
     success_msg: "✅ Configuration directory is valid"
 
@@ -125,6 +152,18 @@
   when: >
     wireguard_enable_psk | bool
 
+- name: 🧪 WireGuard | assert | Check-mode limitations for PSK generation
+  ansible.builtin.assert:
+    that:
+      - not ansible_check_mode or (ansible_check_mode and (wireguard_generate_psk | bool == false))
+    fail_msg: "❌ In --check mode and PSK would need generation or consolidation. Disable --check or set wireguard_generate_psk: false."
+    success_msg: "✅ PSK settings compatible with --check mode"
+  when: >
+    wireguard_enable_psk | bool
+  tags:
+    - validate
+    - check
+
 # -----------------------------------------------------------------------------
 # 5. Logging Configuration Validation
 # -----------------------------------------------------------------------------
@@ -133,14 +172,42 @@
     that:
       - wireguard_enable_logging is defined
       - wireguard_enable_logging is boolean
+      - wireguard_logging_backend is defined
+      - wireguard_logging_backend in ['rsyslog', 'journald']
       - wireguard_log_dir is defined
       - wireguard_log_dir is string
       - wireguard_log_dir | length > 0
       - wireguard_log_dir.startswith('/')
+      - wireguard_log_file is defined
+      - wireguard_log_file is string
+      - wireguard_log_file | length > 0
+      - wireguard_log_file.startswith('/')
       - wireguard_syslog_identifier is defined
       - wireguard_syslog_identifier is string
       - wireguard_syslog_identifier | length > 0
+      - wireguard_log_file_permissions is defined
+      - wireguard_log_file_permissions is string
+      - wireguard_log_file_permissions | regex_search('^0[0-7]{3}$')
+      - wireguard_log_dir_permissions is defined
+      - wireguard_log_dir_permissions is string
+      - wireguard_log_dir_permissions | regex_search('^0[0-7]{3}$')
     fail_msg: "❌ Invalid logging configuration"
     success_msg: "✅ Logging configuration is valid"
   when: >
     wireguard_enable_logging | bool
+
+- name: 🧪 WireGuard | assert | Validate DNS settings
+  ansible.builtin.assert:
+    that:
+      - wireguard_configure_dns is defined
+      - wireguard_configure_dns is boolean
+      - (not wireguard_configure_dns) or (wireguard_dns_servers is defined and wireguard_dns_servers is sequence)
+    fail_msg: "❌ Invalid DNS configuration"
+    success_msg: "✅ DNS configuration is valid"
+
+- name: 🧪 WireGuard | assert | Validate role action
+  ansible.builtin.assert:
+    that:
+      - wireguard_role_action in ['all','install','configure']
+    fail_msg: "❌ Invalid wireguard_role_action: {{ wireguard_role_action }}"
+    success_msg: "✅ Role action is valid: {{ wireguard_role_action }}"

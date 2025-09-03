@@ -24,6 +24,16 @@
   register: wireguard_private_key_stat
 
 # -----------------------------------------------------------------------------
+# 1.a Guard: fail if keys are required but generation is disabled
+# -----------------------------------------------------------------------------
+- name: 🧪 WireGuard | keys | Validate key presence when generation disabled
+  ansible.builtin.fail:
+    msg: "❌ Private key not found at {{ wireguard_config_dir }}/privatekey and wireguard_generate_keys is false. Generate keys manually or enable wireguard_generate_keys."
+  when: >
+    (not wireguard_generate_keys | bool) and
+    (not wireguard_private_key_stat.stat.exists)
+
+# -----------------------------------------------------------------------------
 # 2. Private Key Generation
 # -----------------------------------------------------------------------------
 - name: WireGuard | keys | Generate private key
@@ -31,6 +41,7 @@
   ansible.builtin.shell: |
     wg genkey > {{ wireguard_config_dir }}/privatekey
   when: >
+    wireguard_generate_keys | bool and
     not wireguard_private_key_stat.stat.exists
   register: wireguard_private_key_generated
   no_log: true
@@ -67,54 +78,10 @@
     group: root
 
 # -----------------------------------------------------------------------------
-# 4. Pre-Shared Key Management (PSK) - Enhanced Security
+# 4. Pre-Shared Key Management (PSK)
 # -----------------------------------------------------------------------------
-- name: 🔍 WireGuard | keys | Check if PSK exists
-  become: true
-  ansible.builtin.stat:
-    path: "{{ wireguard_config_dir }}/psk"
-  register: wireguard_psk_stat
-  when: >
-    wireguard_enable_psk | bool
-
-- name: WireGuard | keys | Generate Pre-Shared Key (PSK)
-  become: true
-  ansible.builtin.shell: |
-    wg genpsk > {{ wireguard_config_dir }}/psk
-  when: >
-    wireguard_enable_psk | bool and
-    wireguard_generate_psk | bool and
-    not wireguard_psk_stat.stat.exists
-  register: wireguard_psk_generated
-  no_log: true
-  args:
-    creates: "{{ wireguard_config_dir }}/psk"
-
-- name: WireGuard | keys | Set PSK permissions
-  become: true
-  ansible.builtin.file:
-    path: "{{ wireguard_config_dir }}/psk"
-    mode: "{{ wireguard_psk_permissions }}"
-    owner: root
-    group: root
-  when: >
-    wireguard_enable_psk | bool
-
-- name: WireGuard | keys | Read PSK content
-  become: true
-  ansible.builtin.slurp:
-    src: "{{ wireguard_config_dir }}/psk"
-  register: wireguard_psk_content
-  when: >
-    wireguard_enable_psk | bool
-  no_log: true
-
-- name: WireGuard | keys | Store PSK in facts
-  ansible.builtin.set_fact:
-    wireguard_local_psk: "{{ wireguard_psk_content.content | b64decode | trim }}"
-  when: >
-    wireguard_enable_psk | bool
-  no_log: true
+# NOTE: PSK is now managed cluster-wide at runtime in tasks/psk.yml.
+# This role no longer persists PSK to files or host facts.
 
 # -----------------------------------------------------------------------------
 # 5. Fact Storage and Registration
@@ -150,8 +117,7 @@
   ansible.builtin.copy:
     content: |
       {
-        "wireguard_public_key": "{{ wireguard_local_public_key }}"{% if wireguard_enable_psk | bool %},
-        "wireguard_psk": "{{ wireguard_local_psk }}"{% endif %}
+        "wireguard_public_key": "{{ wireguard_local_public_key }}"
       }
     dest: /etc/ansible/facts.d/wireguard.fact
     mode: '0600'

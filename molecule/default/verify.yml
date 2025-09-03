@@ -180,20 +180,19 @@
         mode: "{{ wireguard_public_key_permissions }}"
       register: _public_key_perms_result_
 
-    - name: 🔍 Verify | Check if PSK exists (when enabled)
-      ansible.builtin.stat:
-        path: "{{ wireguard_config_dir }}/psk"
-        checksum_algorithm: sha256
-      register: _psk_result_
+    - name: 🔍 Verify | Read configuration to check PresharedKey presence
+      ansible.builtin.slurp:
+        src: "{{ wireguard_config_dir }}/{{ wireguard_interface }}.conf"
+      register: _wg_cfg_
       when: >
         wireguard_enable_psk | default(false)
 
-    - name: 🧪 Verify | Assert PSK exists when enabled
+    - name: 🧪 Verify | Assert PresharedKey lines exist for peers when enabled
       ansible.builtin.assert:
         that:
-          - _psk_result_.stat.exists
-        fail_msg: "❌ WireGuard PSK not found when enabled"
-        success_msg: "✅ WireGuard PSK verified"
+          - (_wg_cfg_.content | b64decode).splitlines() | select('match', '^\\s*PresharedKey\\s*=') | list | length >= (groups[wireguard_inventory_group] | length - 1)
+        fail_msg: "❌ PresharedKey entries not found in configuration while PSK is enabled"
+        success_msg: "✅ PresharedKey entries present in configuration"
       when: >
         wireguard_enable_psk | default(false)
 

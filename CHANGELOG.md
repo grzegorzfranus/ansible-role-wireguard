@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.8] - 2025-09-03
+
+### Added ✅
+- Comprehensive variable validation for all role parameters in assert.yml
+- Debugging section in README with wireguard_debug documentation
+
+### Fixed 🔧
+- Respect wireguard_generate_keys setting with proper failure handling
+- Use wireguard_service_timeout for service operations
+- Missing type checks and range validations for network, service, and logging parameters
+
+## [1.4.8] - 2025-09-03
+
+### Added ✅
+- Cluster-wide PSK discovery and consolidation with runtime-only distribution
+
+### Changed 🔄
+- Stop persisting PSK to files and host-local facts; use in-memory facts and template injection
+
+### Fixed 🔧
+- Idempotency for PSK handling across mesh nodes, including consistent reuse and divergence resolution
+
 ## [1.4.7] - 2025-09-01
 
 ### Fixed 🔧

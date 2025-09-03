@@ -61,7 +61,7 @@
 # -----------------------------------------------------------------------------
 - name: WireGuard | service | Wait for service to be fully started
   ansible.builtin.pause:
-    seconds: 2
+    seconds: "{{ wireguard_service_timeout | default(2) }}"
   when: >
     wireguard_service_start_result is changed and
     not (wireguard_molecule_test_mode | default(false))

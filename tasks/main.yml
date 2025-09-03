@@ -102,6 +102,20 @@
     - security
 
 # -----------------------------------------------------------------------------
+# 6.1. Cluster PSK Management (runtime-only)
+# -----------------------------------------------------------------------------
+- name: 🔑 WireGuard | psk | Consolidate cluster PSK (runtime-only)
+  ansible.builtin.include_tasks: psk.yml
+  when: >
+    wireguard_role_action in ['all', 'configure'] and
+    wireguard_enable_psk | bool
+  tags:
+    - setup
+    - configure
+    - keys
+    - security
+
+# -----------------------------------------------------------------------------
 # 7. Service Configuration
 # -----------------------------------------------------------------------------
 - name: 🌐 WireGuard | configure | Configure WireGuard service

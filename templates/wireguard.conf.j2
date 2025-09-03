@@ -39,8 +39,14 @@ DNS = {{ wireguard_dns_servers | join(', ') }}
 # Peer: {{ peer_host }}
 [Peer]
 PublicKey = {{ peer_public_key }}
-{% if wireguard_enable_psk | bool and hostvars[peer_host].get('ansible_local', {}).get('wireguard', {}).get('wireguard_psk') %}
-PresharedKey = {{ hostvars[peer_host]['ansible_local']['wireguard']['wireguard_psk'] }}
+{% if wireguard_enable_psk | bool %}
+{% set _peer_psk_runtime = hostvars[peer_host].get('wireguard_cluster_psk') %}
+{% set _peer_psk_legacy = hostvars[peer_host].get('ansible_local', {}).get('wireguard', {}).get('wireguard_psk') %}
+{% if _peer_psk_runtime %}
+PresharedKey = {{ _peer_psk_runtime }}
+{% elif _peer_psk_legacy %}
+PresharedKey = {{ _peer_psk_legacy }}
+{% endif %}
 {% endif %}
 Endpoint = {{ peer_public_ip }}:{{ wireguard_port }}
 AllowedIPs = {{ peer_ip }}/32

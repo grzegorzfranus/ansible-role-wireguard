@@ -205,12 +205,18 @@ You can override any variable in your playbook:
 |----------|-------------|---------|
 | `wireguard_molecule_test_mode` | Enable container-compatible testing mode (internal variable) | `false` |
 
+### Debugging
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `wireguard_debug` | Enable additional debug output in role tasks (no secrets) | `false` |
+
 **Note**: The `wireguard_molecule_test_mode` variable is used internally by Molecule tests to skip operations that don't work in containers (kernel modules, systemd services, etc.). This should not be modified in production environments.
 
 ### Security Notes
 
-- Keys and PSKs are generated on-host and sensitive tasks are protected with `no_log: true`.
-- Avoid storing PSKs in persistent facts; only public keys are written on disk for discovery.
+- Keys are generated on-host and sensitive tasks are protected with `no_log: true`.
+- Public keys may be stored in host-local facts for discovery; PSKs are handled only at runtime.
 - Prefer setting `wireguard_endpoint` when hosts are behind NAT or require DNS endpoints.
 
 ### Container Compatibility
@@ -296,19 +302,23 @@ Servers get IP addresses based on their position in the inventory:
 
 ### 🔐 Enhanced Security with Pre-Shared Keys (PSK)
 
-This role implements **Pre-Shared Key (PSK)** support for enhanced security:
+This role implements **Pre-Shared Key (PSK)** support with cluster-wide consistency and runtime-only handling:
 
-- **Quantum Resistance**: PSK adds symmetric encryption layer that protects against quantum computing attacks on elliptic curves
 - **Defense in Depth**: Combines asymmetric (public key) + symmetric (PSK) cryptography
-- **Automatic Generation**: Each server generates its own PSK using `wg genpsk`
-- **Secure Distribution**: PSK is automatically shared between mesh peers
-- **Minimal Attack Surface**: Each peer connection uses `/32` AllowedIPs (single IP, not subnets)
+- **Cluster-wide consolidation**: Discovers existing PSKs across hosts; if none or divergent, generates one new PSK and distributes it runtime-only
+- **Idempotent**: If a consistent PSK exists everywhere, subsequent runs make no changes
+- **Runtime-only**: PSK is not stored on disk or in vault by this role; it is injected as an in-memory fact during execution and used by templates
+- **Backward compatibility**: If a legacy PSK exists (persistent fact or `{{ wireguard_config_dir }}/psk` file), it will be detected and reused when consistent
 
-PSK is enabled by default (`wireguard_enable_psk: true`). To disable PSK and use only public key cryptography:
+Behavior rules when PSK is enabled (`wireguard_enable_psk: true`):
 
-```yaml
-wireguard_enable_psk: false
-```
+- No PSK found anywhere → a new PSK is generated with `wg genpsk` and distributed
+- Exactly one unique PSK found across hosts → reused and distributed to missing hosts
+- Multiple differing PSKs found → a new PSK is generated and used across all hosts
+
+Check mode (`--check`):
+
+- If generation would be required (none or divergent), the role fails fast with a clear message; rerun without `--check` to generate
 
 ## 🛡️ Manual Iptables Configuration
 
