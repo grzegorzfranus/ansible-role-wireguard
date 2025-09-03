@@ -190,11 +190,11 @@
     - name: 🧪 Verify | Assert PresharedKey lines exist for peers when enabled
       ansible.builtin.assert:
         that:
-          - (_wg_cfg_.content | b64decode).splitlines() | select('match', '^\\s*PresharedKey\\s*=') | list | length >= (groups[wireguard_inventory_group] | length - 1)
+          - (_wg_cfg_.content | b64decode).splitlines() | select('match', '^\\s*PresharedKey\\s*=') | list | length >= (((groups[wireguard_inventory_group] | default([])) | length) - 1)
         fail_msg: "❌ PresharedKey entries not found in configuration while PSK is enabled"
         success_msg: "✅ PresharedKey entries present in configuration"
       when: >
-        wireguard_enable_psk | default(false)
+        wireguard_enable_psk | default(false) and (((groups[wireguard_inventory_group] | default([])) | length) >= 2)
 
 # -----------------------------------------------------------------------------
 # 5. Logging Setup Verification
