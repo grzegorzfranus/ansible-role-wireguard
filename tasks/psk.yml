@@ -143,6 +143,7 @@
   changed_when: true
   when: >
     wireguard_enable_psk | bool and
+    (groups[wireguard_inventory_group] | length >= 2) and
     not ansible_check_mode and
     ((wireguard_unique_psks | length == 0) or (wireguard_unique_psks | length > 1))
   delegate_to: "{{ groups[wireguard_inventory_group][0] }}"
