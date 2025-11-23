@@ -20,4 +20,3 @@ collections:
   # Version 8.0.0+ recommended for Ansible core 2.20+ compatibility
   - name: community.general
     version: ">=8.0.0"
-
