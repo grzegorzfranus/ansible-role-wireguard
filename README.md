@@ -34,11 +34,22 @@ Server 1 (10.0.0.1) ←→ Server 2 (10.0.0.2)
 
 ## 📋 Requirements
 
-- **Ansible**: 2.15 or higher
+- **Ansible**: 2.15 or higher (tested with Ansible core 2.20+)
 - **Kernel**: 5.6+ (for native WireGuard support)
 - **Network**: All servers must be able to reach each other on UDP port 51820
 - **Privileges**: sudo/root access on target hosts
- - **Execution**: run the play against the entire `wireguardservers` group; single-host runs are not supported
+- **Execution**: run the play against the entire `wireguardservers` group; single-host runs are not supported
+
+**Collections**: This role requires the following Ansible collections:
+- `ansible.posix` (>= 1.5.0) - for system configuration (sysctl)
+- `community.general` (>= 8.0.0) - for kernel module management (modprobe)
+
+Install collections using:
+```bash
+ansible-galaxy collection install -r meta/requirements.yml
+```
+
+**Note**: Version 1.4.9+ is fully compatible with Ansible core 2.20 and its stricter boolean conditional requirements.
 
 ### Supported operating systems
 List of officially supported operating systems:
@@ -412,6 +423,22 @@ sudo rm /etc/wireguard/psk  # If PSK is enabled
 sudo cat /etc/wireguard/psk
 ```
 
+### Deprecation warnings from collections
+
+If you see warnings like `Importing 'to_native' from 'ansible.module_utils._text' is deprecated`, this is from older versions of the `ansible.posix` or `community.general` collections:
+
+```bash
+# Update all required collections to latest versions
+ansible-galaxy collection install -r meta/requirements.yml --upgrade
+
+# Verify installed collection versions
+ansible-galaxy collection list | grep -E "ansible.posix|community.general"
+
+# Expected versions:
+# - ansible.posix: >= 1.5.0
+# - community.general: >= 8.0.0
+```
+
 ## 📁 File Structure
 
 ```
@@ -428,7 +455,8 @@ ansible-role-wireguard/
 ├── handlers/
 │   └── main.yml             # Service restart and reload handlers
 ├── meta/
-│   └── main.yml             # Role metadata and Galaxy information
+│   ├── main.yml             # Role metadata and Galaxy information
+│   └── requirements.yml     # Ansible collections requirements and versions
 ├── molecule/                 # Molecule testing framework
 │   └── default/             # Default test scenario
 │       ├── molecule.yml     # Test configuration

@@ -48,10 +48,10 @@
     that:
       - wireguard_network_base is defined
       - wireguard_network_base is string
-      - wireguard_network_base | regex_search('^([0-9]{1,3}\.){3}[0-9]{1,3}\/[0-9]{1,2}$')
+      - wireguard_network_base | regex_search('^([0-9]{1,3}\.){3}[0-9]{1,3}\/[0-9]{1,2}$') is not none
       - wireguard_network_prefix is defined
       - wireguard_network_prefix is string
-      - wireguard_network_prefix | regex_search('^([0-9]{1,3}\.){2}[0-9]{1,3}$')
+      - wireguard_network_prefix | regex_search('^([0-9]{1,3}\.){2}[0-9]{1,3}$') is not none
       - wireguard_port is defined
       - wireguard_port is number
       - wireguard_port >= 1024
@@ -87,7 +87,7 @@
       - wireguard_interface is defined
       - wireguard_interface is string
       - wireguard_interface | length > 0
-      - wireguard_interface | regex_search('^[a-zA-Z][a-zA-Z0-9]*$')
+      - wireguard_interface | regex_search('^[a-zA-Z][a-zA-Z0-9]*$') is not none
       - wireguard_mtu is defined
       - wireguard_mtu is number
       - wireguard_mtu >= 1280
@@ -125,13 +125,13 @@
       - wireguard_config_dir.startswith('/')
       - wireguard_config_permissions is defined
       - wireguard_config_permissions is string
-      - wireguard_config_permissions | regex_search('^0[0-7]{3}$')
+      - wireguard_config_permissions | regex_search('^0[0-7]{3}$') is not none
       - wireguard_private_key_permissions is defined
       - wireguard_private_key_permissions is string
-      - wireguard_private_key_permissions | regex_search('^0[0-7]{3}$')
+      - wireguard_private_key_permissions | regex_search('^0[0-7]{3}$') is not none
       - wireguard_public_key_permissions is defined
       - wireguard_public_key_permissions is string
-      - wireguard_public_key_permissions | regex_search('^0[0-7]{3}$')
+      - wireguard_public_key_permissions | regex_search('^0[0-7]{3}$') is not none
       - wireguard_backup_config is defined
       - wireguard_backup_config is boolean
     fail_msg: "❌ Invalid configuration directory: {{ wireguard_config_dir }}"
@@ -146,7 +146,7 @@
       - wireguard_generate_psk is boolean
       - wireguard_psk_permissions is defined
       - wireguard_psk_permissions is string
-      - wireguard_psk_permissions | regex_search('^0[0-7]{3}$')
+      - wireguard_psk_permissions | regex_search('^0[0-7]{3}$') is not none
     fail_msg: "❌ Invalid PSK configuration"
     success_msg: "✅ PSK configuration is valid"
   when: >
@@ -187,10 +187,10 @@
       - wireguard_syslog_identifier | length > 0
       - wireguard_log_file_permissions is defined
       - wireguard_log_file_permissions is string
-      - wireguard_log_file_permissions | regex_search('^0[0-7]{3}$')
+      - wireguard_log_file_permissions | regex_search('^0[0-7]{3}$') is not none
       - wireguard_log_dir_permissions is defined
       - wireguard_log_dir_permissions is string
-      - wireguard_log_dir_permissions | regex_search('^0[0-7]{3}$')
+      - wireguard_log_dir_permissions | regex_search('^0[0-7]{3}$') is not none
     fail_msg: "❌ Invalid logging configuration"
     success_msg: "✅ Logging configuration is valid"
   when: >

@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.9] - 2025-11-23
+
+### Fixed 🔧
+- Fixed compatibility with Ansible core 2.20+ by updating all `regex_search` conditionals to return explicit boolean values
+- Updated 9 conditional checks in `tasks/assert.yml` to use `is not none` pattern for proper boolean evaluation
+- Resolved "Conditional result was derived from value of type 'str'" errors that occurred with Ansible 2.20+
+- Fixed INJECT_FACTS_AS_VARS deprecation warnings by migrating all top-level facts to `ansible_facts` dictionary
+- Updated `templates/wireguard.conf.j2` to use `ansible_facts['default_ipv4']` instead of deprecated `ansible_default_ipv4`
+- Updated `templates/wireguard.conf.j2` to use `ansible_facts['local']` instead of deprecated `ansible_local` for legacy key/PSK lookups
+- Updated `tasks/main.yml` to use `ansible_facts['distribution']`, `ansible_facts['distribution_version']`, and `ansible_facts['distribution_major_version']`
+- Updated `tasks/prerequisites.yml` to use `ansible_facts['kernel']` instead of deprecated `ansible_kernel`
+- Updated `tasks/psk.yml` to use `ansible_facts['local']['wireguard']` instead of deprecated `ansible_local.wireguard`
+- Updated molecule test files (`verify.yml` and `converge.yml`) to use `ansible_facts['service_mgr']`
+
+### Added ✅
+- Created `meta/requirements.yml` file with minimum collection version requirements
+- Added version constraints for `ansible.posix` (>=1.5.0) and `community.general` (>=8.0.0) collections
+- Documented collection requirements to avoid deprecation warnings from older collection versions
+
+### Changed 🔄
+- Enhanced conditional validation patterns to comply with stricter Ansible 2.20 boolean requirements
+- Improved regex pattern validation for network configuration, interface names, permissions, and logging settings
+- Migrated all fact references from top-level variables to `ansible_facts` dictionary for future compatibility
+- Ensured full compliance with Ansible 2.24+ where INJECT_FACTS_AS_VARS will default to False
+- Updated `meta/main.yml` to reference required Ansible collections
+
+### Known Issues ⚠️
+- Older versions of `ansible.posix` collection (< 1.5.0) may show deprecation warnings about `to_native` import
+- Solution: Update collections using `ansible-galaxy collection install -r meta/requirements.yml --upgrade`
+
 ## [1.4.8] - 2025-09-03
 
 ### Added ✅

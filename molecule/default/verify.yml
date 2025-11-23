@@ -292,7 +292,7 @@
         path: "/lib/systemd/system/wg-quick@.service"
       register: _service_template_result_
       when: >
-        ansible_service_mgr == 'systemd'
+        ansible_facts['service_mgr'] == 'systemd'
 
     - name: 📊 Verify | Show service verification results
       ansible.builtin.debug:

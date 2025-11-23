@@ -1,0 +1,23 @@
+---
+# =============================================================================
+# Ansible Collections Requirements
+# =============================================================================
+# This file specifies the required Ansible collections and their minimum
+# versions for this role to function properly.
+#
+# Installation:
+#   ansible-galaxy collection install -r meta/requirements.yml
+# =============================================================================
+
+collections:
+  # POSIX utilities for system configuration (sysctl, firewall, etc.)
+  # Note: Version 1.5.0+ recommended to avoid deprecation warnings
+  # in Ansible core 2.20+
+  - name: ansible.posix
+    version: ">=1.5.0"
+
+  # Community-maintained general purpose modules (modprobe, etc.)
+  # Version 8.0.0+ recommended for Ansible core 2.20+ compatibility
+  - name: community.general
+    version: ">=8.0.0"
+

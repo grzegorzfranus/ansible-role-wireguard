@@ -44,9 +44,9 @@
 - name: WireGuard | prerequisites | Verify kernel compatibility
   ansible.builtin.assert:
     that:
-      - ansible_kernel is version(wireguard_minimum_kernel_version, '>=')
-    fail_msg: "❌ Kernel version {{ ansible_kernel }} is too old for WireGuard. Minimum required: {{ wireguard_minimum_kernel_version }}"
-    success_msg: "✅ Kernel version {{ ansible_kernel }} meets minimum {{ wireguard_minimum_kernel_version }}"
+      - ansible_facts['kernel'] is version(wireguard_minimum_kernel_version, '>=')
+    fail_msg: "❌ Kernel version {{ ansible_facts['kernel'] }} is too old for WireGuard. Minimum required: {{ wireguard_minimum_kernel_version }}"
+    success_msg: "✅ Kernel version {{ ansible_facts['kernel'] }} meets minimum {{ wireguard_minimum_kernel_version }}"
 
 # -----------------------------------------------------------------------------
 # 3. Network Interface Checks

@@ -24,11 +24,11 @@
 # -----------------------------------------------------------------------------
 - name: WireGuard | assert | Validate supported operating system
   ansible.builtin.fail:
-    msg: "❌ Unsupported OS: {{ ansible_distribution }} {{ ansible_distribution_version }}. This role supports Ubuntu 22.04, 24.04 and Debian 12."
+    msg: "❌ Unsupported OS: {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] }}. This role supports Ubuntu 22.04, 24.04 and Debian 12."
   when: >
-    (ansible_distribution == "Ubuntu" and ansible_distribution_version not in wireguard_supported_ubuntu_versions) or
-    (ansible_distribution == "Debian" and ansible_distribution_major_version not in wireguard_supported_debian_versions) or
-    (ansible_distribution not in ["Ubuntu", "Debian"])
+    (ansible_facts['distribution'] == "Ubuntu" and ansible_facts['distribution_version'] not in wireguard_supported_ubuntu_versions) or
+    (ansible_facts['distribution'] == "Debian" and ansible_facts['distribution_major_version'] not in wireguard_supported_debian_versions) or
+    (ansible_facts['distribution'] not in ["Ubuntu", "Debian"])
   tags:
     - always
     - validate

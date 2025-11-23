@@ -56,14 +56,14 @@
 
 - name: "WireGuard | psk | Fallback: detect PSK from ansible_local persistent facts (legacy)"
   ansible.builtin.set_fact:
-    wireguard_existing_psk: "{{ ansible_local.wireguard.wireguard_psk }}"
+    wireguard_existing_psk: "{{ ansible_facts['local']['wireguard']['wireguard_psk'] }}"
   when: >
     wireguard_enable_psk | bool and
     (wireguard_existing_psk is not defined) and
-    (ansible_local is defined and
-     ansible_local.wireguard is defined and
-     ansible_local.wireguard.wireguard_psk is defined and
-     (ansible_local.wireguard.wireguard_psk | string | length) > 0)
+    (ansible_facts['local'] is defined and
+     ansible_facts['local']['wireguard'] is defined and
+     ansible_facts['local']['wireguard']['wireguard_psk'] is defined and
+     (ansible_facts['local']['wireguard']['wireguard_psk'] | string | length) > 0)
   no_log: true
 
 - name: "WireGuard | psk | Fallback: detect PSK from legacy file {{ wireguard_config_dir }}/psk"
