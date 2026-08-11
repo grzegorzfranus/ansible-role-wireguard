@@ -1,0 +1,12 @@
+---
+name: "📋 Maintenance Task"
+description: "A chore, refactoring, or maintenance task"
+labels: ["chore"]
+body:
+  - type: textarea
+    id: task_description
+    attributes:
+      label: "Task Description"
+      description: "Detailed description of the task."
+    validations:
+      required: true

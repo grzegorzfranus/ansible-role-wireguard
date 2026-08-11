@@ -1,0 +1,6 @@
+---
+blank_issues_enabled: false
+contact_links:
+  - name: WireGuard Documentation
+    url: https://www.wireguard.com/
+    about: Official WireGuard Documentation

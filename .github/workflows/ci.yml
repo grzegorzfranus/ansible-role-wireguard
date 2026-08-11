@@ -1,0 +1,122 @@
+---
+# =============================================================================
+# GitHub Actions Workflow: Continuous Integration
+# =============================================================================
+name: CI
+
+run-name: "CI [PR #${{ github.event.pull_request.number }} - ${{ github.event.pull_request.title }}]"
+
+"on":
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Job 1: Branch Name Lint
+  # ---------------------------------------------------------------------------
+  branch-name-lint:
+    name: "🌿 Branch Name Lint"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: "🔍 Validate branch naming convention"
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          PATTERN='^(feature|bugfix|fix|hotfix|release|chore|docs|refactor|test|build|ci|perf|revert)/[a-zA-Z0-9-]+$'
+          if [[ ! "$HEAD_REF" =~ $PATTERN ]]; then
+            {
+              echo "### ❌ Branch Name Lint Failed"
+              echo "Branch name \`$HEAD_REF\` does not match the required regex pattern:"
+              echo "\`\`\`"
+              echo "$PATTERN"
+              echo "\`\`\`"
+              echo "Example valid branch name: \`feature/initial-wireguard-role\`"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          {
+            echo "### ✅ Branch Name Lint Passed"
+            echo "Branch name \`$HEAD_REF\` matches naming rules."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------------------
+  # Job 2: PR Title Lint
+  # ---------------------------------------------------------------------------
+  pr-title-lint:
+    name: "📝 PR Title Lint"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: "🔍 Validate PR title format"
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          PATTERN='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-zA-Z0-9_-]+\))?!?: .+$'
+          if [[ ! "$PR_TITLE" =~ $PATTERN ]]; then
+            {
+              echo "### ❌ PR Title Lint Failed"
+              echo "PR title \`$PR_TITLE\` does not match conventional commits pattern:"
+              echo "\`\`\`"
+              echo "$PATTERN"
+              echo "\`\`\`"
+              echo "Example valid PR title: \`feat: implement wireguard mesh role with secure defaults\`"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          {
+            echo "### ✅ PR Title Lint Passed"
+            echo "PR title \`$PR_TITLE\` matches conventional commits pattern."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ---------------------------------------------------------------------------
+  # Job 3: Reusable Ansible CI Execution
+  # ---------------------------------------------------------------------------
+  ci:
+    name: "🧪 Ansible CI"
+    uses: grzegorzfranus/github-workflows/.github/workflows/ansible-ci.yml@v3.0.1
+    with:
+      molecule-distros: '["ubuntu2604","ubuntu2404","debian13","debian12"]'
+      molecule-scenarios: '["default"]'
+
+  # ---------------------------------------------------------------------------
+  # Job 4: Merge Check Gate
+  # ---------------------------------------------------------------------------
+  merge-check:
+    name: "Merge Check Gate"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs:
+      - branch-name-lint
+      - pr-title-lint
+      - ci
+    if: always()
+    steps:
+      - name: "🚦 Evaluate CI pipeline results"
+        env:
+          BRANCH_LINT_RESULT: ${{ needs.branch-name-lint.result }}
+          PR_TITLE_LINT_RESULT: ${{ needs.pr-title-lint.result }}
+          CI_RESULT: ${{ needs.ci.result }}
+        run: |
+          {
+            echo "### 📊 Pipeline Results Summary"
+            echo "- Branch Name Lint: **$BRANCH_LINT_RESULT**"
+            echo "- PR Title Lint: **$PR_TITLE_LINT_RESULT**"
+            echo "- Ansible CI: **$CI_RESULT**"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ "$BRANCH_LINT_RESULT" == "success" && "$PR_TITLE_LINT_RESULT" == "success" && "$CI_RESULT" == "success" ]]; then
+            echo "#### ✅ All mandatory CI checks passed cleanly." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          else
+            echo "#### ❌ One or more mandatory CI checks failed." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
