@@ -1,0 +1,124 @@
+# =============================================================================
+# Ansible Role: WireGuard - Tasks: Assertions
+# =============================================================================
+# Basic type/choice validation is handled by meta/argument_specs.yml.
+# This file performs runtime-only checks (regex patterns, subnet consistency, cross-host uniqueness).
+# =============================================================================
+---
+# -----------------------------------------------------------------------------
+# 1. Lifecycle Settings
+# -----------------------------------------------------------------------------
+
+- name: WireGuard | assert | Validate wireguard_state
+  ansible.builtin.assert:
+    that:
+      - wireguard_state is defined
+      - wireguard_state is string
+      - wireguard_state | lower in ['present', 'absent']
+    fail_msg: "wireguard_state must be 'present' or 'absent'"
+    success_msg: "wireguard_state validated: {{ wireguard_state }}"
+
+# -----------------------------------------------------------------------------
+# 2. Network & Interface Settings
+# -----------------------------------------------------------------------------
+
+- name: WireGuard | assert | Validate wireguard_mesh_group
+  ansible.builtin.assert:
+    that:
+      - wireguard_mesh_group is defined
+      - wireguard_mesh_group is string
+      - wireguard_mesh_group | length > 0
+    fail_msg: "wireguard_mesh_group must be a non-empty string"
+    success_msg: "wireguard_mesh_group validated: {{ wireguard_mesh_group }}"
+
+- name: WireGuard | assert | Validate wireguard_interface
+  ansible.builtin.assert:
+    that:
+      - wireguard_interface is defined
+      - wireguard_interface is string
+      - wireguard_interface is match('^[a-zA-Z0-9_-]+$')
+    fail_msg: "wireguard_interface must be a valid interface name (e.g. 'wg0')"
+    success_msg: "wireguard_interface validated: {{ wireguard_interface }}"
+
+- name: WireGuard | assert | Validate wireguard_port
+  ansible.builtin.assert:
+    that:
+      - wireguard_port is defined
+      - wireguard_port | int >= 1
+      - wireguard_port | int <= 65535
+    fail_msg: "wireguard_port must be an integer between 1 and 65535"
+    success_msg: "wireguard_port validated: {{ wireguard_port }}"
+
+- name: WireGuard | assert | Validate wireguard_network
+  ansible.builtin.assert:
+    that:
+      - wireguard_network is defined
+      - wireguard_network is string
+      - wireguard_network is match('^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/[0-9]{1,2}$')
+    fail_msg: "wireguard_network must be a valid CIDR string (e.g. '10.8.0.0/24')"
+    success_msg: "wireguard_network validated: {{ wireguard_network }}"
+
+- name: WireGuard | assert | Validate wireguard_address format and presence
+  ansible.builtin.assert:
+    that:
+      - wireguard_address is defined
+      - wireguard_address is string
+      - wireguard_address | length > 0
+      - wireguard_address is match('^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/[0-9]{1,2}$')
+    fail_msg: "wireguard_address must be defined per host as a valid CIDR string (e.g. '10.8.0.11/24')"
+    success_msg: "wireguard_address validated for {{ inventory_hostname }}: {{ wireguard_address }}"
+  when: wireguard_state | lower != 'absent'
+
+- name: WireGuard | assert | Validate wireguard_endpoint
+  ansible.builtin.assert:
+    that:
+      - wireguard_endpoint is defined
+      - wireguard_endpoint is string
+      - wireguard_endpoint | length > 0
+    fail_msg: "wireguard_endpoint must be a non-empty IP or FQDN string"
+    success_msg: "wireguard_endpoint validated for {{ inventory_hostname }}: {{ wireguard_endpoint }}"
+  when: wireguard_state | lower != 'absent'
+
+- name: WireGuard | assert | Validate wireguard_persistent_keepalive
+  ansible.builtin.assert:
+    that:
+      - wireguard_persistent_keepalive is defined
+      - wireguard_persistent_keepalive | int >= 0
+    fail_msg: "wireguard_persistent_keepalive must be an integer >= 0"
+    success_msg: "wireguard_persistent_keepalive validated: {{ wireguard_persistent_keepalive }}"
+
+- name: WireGuard | assert | Validate wireguard_enable_forwarding
+  ansible.builtin.assert:
+    that:
+      - wireguard_enable_forwarding is defined
+      - wireguard_enable_forwarding is boolean
+    fail_msg: "wireguard_enable_forwarding must be a boolean (true or false)"
+    success_msg: "wireguard_enable_forwarding validated: {{ wireguard_enable_forwarding }}"
+
+# -----------------------------------------------------------------------------
+# 3. Key Management & Security Settings
+# -----------------------------------------------------------------------------
+
+- name: WireGuard | assert | Validate wireguard_use_preshared_keys
+  ansible.builtin.assert:
+    that:
+      - wireguard_use_preshared_keys is defined
+      - wireguard_use_preshared_keys is boolean
+    fail_msg: "wireguard_use_preshared_keys must be a boolean (true or false)"
+    success_msg: "wireguard_use_preshared_keys validated: {{ wireguard_use_preshared_keys }}"
+
+- name: WireGuard | assert | Validate wireguard_regenerate_keys
+  ansible.builtin.assert:
+    that:
+      - wireguard_regenerate_keys is defined
+      - wireguard_regenerate_keys is boolean
+    fail_msg: "wireguard_regenerate_keys must be a boolean (true or false)"
+    success_msg: "wireguard_regenerate_keys validated: {{ wireguard_regenerate_keys }}"
+
+- name: WireGuard | assert | Validate wireguard_purge_keys
+  ansible.builtin.assert:
+    that:
+      - wireguard_purge_keys is defined
+      - wireguard_purge_keys is boolean
+    fail_msg: "wireguard_purge_keys must be a boolean (true or false)"
+    success_msg: "wireguard_purge_keys validated: {{ wireguard_purge_keys }}"

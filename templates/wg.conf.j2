@@ -1,0 +1,29 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+{{ ansible_managed | comment }}
+
+[Interface]
+Address = {{ wireguard_address }}
+ListenPort = {{ wireguard_port }}
+PrivateKey = {{ __wireguard_private_key }}
+SaveConfig = false
+{% if wireguard_mtu is defined and wireguard_mtu is not none and wireguard_mtu | string | length > 0 %}
+MTU = {{ wireguard_mtu }}
+{% endif %}
+
+{% for peer in (groups[wireguard_mesh_group] | default([])) %}
+{% if peer != inventory_hostname and hostvars[peer] is defined and hostvars[peer]['wireguard_address'] is defined %}
+[Peer]
+# Peer: {{ peer }}
+PublicKey = {{ hostvars[peer]['__wireguard_public_key'] }}
+{% if wireguard_use_preshared_keys | bool and __wireguard_psks is defined and peer in __wireguard_psks %}
+PresharedKey = {{ __wireguard_psks[peer] }}
+{% endif %}
+Endpoint = {{ hostvars[peer]['wireguard_endpoint'] | default(hostvars[peer]['ansible_host'] | default(peer)) }}:{{ hostvars[peer]['wireguard_port'] | default(wireguard_port) }}
+AllowedIPs = {{ hostvars[peer]['wireguard_address'].split('/')[0] }}/32
+{% set peer_keepalive = hostvars[peer]['wireguard_persistent_keepalive'] | default(wireguard_persistent_keepalive) %}
+{% if peer_keepalive | int > 0 %}
+PersistentKeepalive = {{ peer_keepalive }}
+{% endif %}
+
+{% endif %}
+{% endfor %}

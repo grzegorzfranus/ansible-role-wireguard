@@ -1,0 +1,76 @@
+# =============================================================================
+# Ansible Role: WireGuard - Argument Specifications
+# =============================================================================
+---
+argument_specs:
+  main:
+    short_description: Deploy and configure WireGuard full-mesh VPN
+    description:
+      - Installs WireGuard via native APT package management on Ubuntu and Debian.
+      - Builds a full-mesh WireGuard VPN topology across hosts in an inventory group.
+      - Manages target host cryptographic keys securely with no_log protections.
+    options:
+      wireguard_state:
+        description: Target lifecycle state of WireGuard installation
+        type: str
+        choices:
+          - present
+          - absent
+        default: present
+
+      wireguard_mesh_group:
+        description: Inventory group name whose members form the WireGuard mesh network
+        type: str
+        default: wireguard
+
+      wireguard_interface:
+        description: Name of the WireGuard interface
+        type: str
+        default: wg0
+
+      wireguard_port:
+        description: UDP listening port for WireGuard service
+        type: int
+        default: 51820
+
+      wireguard_network:
+        description: WireGuard mesh network CIDR subnet
+        type: str
+        default: 10.8.0.0/24
+
+      wireguard_address:
+        description: Per-host IP address inside the WireGuard network (with prefix e.g. 10.8.0.11/24)
+        type: str
+
+      wireguard_endpoint:
+        description: Public IP address or FQDN for peers to connect to this host
+        type: str
+
+      wireguard_mtu:
+        description: Optional Maximum Transmission Unit (MTU) size for the WireGuard interface
+        type: int
+
+      wireguard_persistent_keepalive:
+        description: Persistent keepalive interval in seconds (default 0 disables keepalive)
+        type: int
+        default: 0
+
+      wireguard_use_preshared_keys:
+        description: Enable unique per-peer-pair pre-shared keys (PSK)
+        type: bool
+        default: true
+
+      wireguard_regenerate_keys:
+        description: Force regeneration of private and public keys on target hosts
+        type: bool
+        default: false
+
+      wireguard_purge_keys:
+        description: Purge generated private/public keys and PSKs when wireguard_state is absent
+        type: bool
+        default: false
+
+      wireguard_enable_forwarding:
+        description: Enable IPv4 kernel packet forwarding via sysctl
+        type: bool
+        default: false

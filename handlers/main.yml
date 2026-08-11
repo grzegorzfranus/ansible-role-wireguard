@@ -1,0 +1,30 @@
+# =============================================================================
+# Ansible Role: WireGuard - Handlers
+# =============================================================================
+# Handlers triggered by configuration changes and service lifecycle events.
+# =============================================================================
+---
+# Justification: Use shell module with process substitution <(wg-quick strip ...)
+# to apply configuration updates dynamically via 'wg syncconf' without dropping active tunnels.
+- name: WireGuard | handlers | Reload WireGuard configuration
+  listen: "Wireguard | handlers | Reload WireGuard configuration"
+  become: true
+  ansible.builtin.shell: >-
+    set -o pipefail &&
+    wg syncconf {{ wireguard_interface }} <(wg-quick strip {{ wireguard_interface }})
+  args:
+    executable: /bin/bash
+  changed_when: true
+  when:
+    - wireguard_state | lower != 'absent'
+    - not ansible_check_mode
+
+- name: WireGuard | handlers | Restart WireGuard service
+  listen: "Wireguard | handlers | Restart WireGuard service"
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ __wireguard_service_name }}"
+    state: restarted
+  when:
+    - wireguard_state | lower != 'absent'
+    - not ansible_check_mode

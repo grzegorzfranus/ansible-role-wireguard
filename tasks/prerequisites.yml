@@ -1,0 +1,9 @@
+# =============================================================================
+# Ansible Role: WireGuard - Tasks: Prerequisites
+# =============================================================================
+# Dispatcher routing prerequisite installation to OS family specific task files.
+# =============================================================================
+---
+- name: WireGuard | prerequisites | Install prerequisites (Debian)
+  ansible.builtin.include_tasks: prerequisites_debian.yml
+  when: ansible_facts['os_family'] == 'Debian'

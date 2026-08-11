@@ -1,0 +1,12 @@
+# =============================================================================
+# Ansible Role: WireGuard - OS Variables: Debian Family
+# =============================================================================
+# Package and repository definitions for Ubuntu and Debian distributions.
+# These are NOT user-overridable. All use double-underscore prefix per Red Hat CoP.
+# =============================================================================
+---
+# Mandatory APT packages required for WireGuard installation and tooling
+__wireguard_packages:
+  - wireguard
+  - wireguard-tools
+  - iproute2

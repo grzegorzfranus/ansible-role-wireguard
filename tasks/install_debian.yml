@@ -1,0 +1,15 @@
+# =============================================================================
+# Ansible Role: WireGuard - Tasks: Install (Debian)
+# =============================================================================
+# Installs WireGuard and wireguard-tools packages via APT.
+# =============================================================================
+---
+- name: WireGuard | install | Install WireGuard APT packages (Debian)
+  become: true
+  ansible.builtin.apt:
+    name: "{{ __wireguard_packages }}"
+    state: present
+  register: __wireguard_package_install
+  retries: 3
+  delay: 5
+  until: __wireguard_package_install is succeeded

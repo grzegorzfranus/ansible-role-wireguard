@@ -1,0 +1,93 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  tasks:
+    - name: Verify | Check /etc/wireguard directory stat
+      ansible.builtin.stat:
+        path: /etc/wireguard
+      register: __verify_dir
+
+    - name: Verify | Assert /etc/wireguard directory mode is 0700
+      ansible.builtin.assert:
+        that:
+          - __verify_dir.stat.exists
+          - __verify_dir.stat.isdir
+          - __verify_dir.stat.mode == '0700'
+          - __verify_dir.stat.pw_name == 'root'
+          - __verify_dir.stat.gr_name == 'root'
+        fail_msg: "/etc/wireguard directory must exist with mode 0700 root:root"
+        success_msg: "/etc/wireguard directory verified with mode 0700"
+
+    - name: Verify | Check /etc/wireguard/keys directory stat
+      ansible.builtin.stat:
+        path: /etc/wireguard/keys
+      register: __verify_keys_dir
+
+    - name: Verify | Assert /etc/wireguard/keys directory mode is 0700
+      ansible.builtin.assert:
+        that:
+          - __verify_keys_dir.stat.exists
+          - __verify_keys_dir.stat.isdir
+          - __verify_keys_dir.stat.mode == '0700'
+          - __verify_keys_dir.stat.pw_name == 'root'
+          - __verify_keys_dir.stat.gr_name == 'root'
+        fail_msg: "/etc/wireguard/keys directory must exist with mode 0700 root:root"
+        success_msg: "/etc/wireguard/keys directory verified with mode 0700"
+
+    - name: Verify | Check /etc/wireguard/wg0.conf file stat
+      ansible.builtin.stat:
+        path: /etc/wireguard/wg0.conf
+      register: __verify_conf
+
+    - name: Verify | Assert /etc/wireguard/wg0.conf file mode is 0600
+      ansible.builtin.assert:
+        that:
+          - __verify_conf.stat.exists
+          - __verify_conf.stat.isreg
+          - __verify_conf.stat.mode == '0600'
+          - __verify_conf.stat.pw_name == 'root'
+          - __verify_conf.stat.gr_name == 'root'
+        fail_msg: "/etc/wireguard/wg0.conf must exist with mode 0600 root:root"
+        success_msg: "/etc/wireguard/wg0.conf verified with mode 0600"
+
+    - name: Verify | Read rendered wg0.conf content
+      ansible.builtin.slurp:
+        src: /etc/wireguard/wg0.conf
+      register: __verify_conf_slurp
+
+    - name: Verify | Assert wg0.conf contains interface and peer sections
+      vars:
+        conf_text: "{{ __verify_conf_slurp.content | b64decode }}"
+      ansible.builtin.assert:
+        that:
+          - "'[Interface]' in conf_text"
+          - "'Address = 10.8.0.11/24' in conf_text"
+          - "'ListenPort = 51820' in conf_text"
+          - "'SaveConfig = false' in conf_text"
+          - "'[Peer]' in conf_text"
+          - "'AllowedIPs = 10.8.0.12/32' in conf_text"
+        fail_msg: "wg0.conf does not contain expected Interface and Peer mesh parameters"
+        success_msg: "wg0.conf content verified successfully"
+
+    - name: Verify | Check WireGuard kernel module availability
+      ansible.builtin.command: "modprobe -n wireguard"
+      register: __verify_module_check
+      failed_when: false
+      changed_when: false
+
+    - name: Verify | Assert WireGuard service status conditionally
+      ansible.builtin.systemd:
+        name: wg-quick@wg0
+      register: __verify_service
+      when: __verify_module_check.rc == 0
+
+    - name: Verify | Assert service active when module is loaded
+      ansible.builtin.assert:
+        that:
+          - __verify_service.status.ActiveState == 'active'
+        fail_msg: "wg-quick@wg0 service is not active"
+        success_msg: "wg-quick@wg0 service is active"
+      when:
+        - __verify_module_check.rc == 0
+        - not ansible_check_mode

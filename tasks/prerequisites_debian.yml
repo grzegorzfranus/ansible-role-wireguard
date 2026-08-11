@@ -1,0 +1,15 @@
+# =============================================================================
+# Ansible Role: WireGuard - Tasks: Prerequisites (Debian)
+# =============================================================================
+# Installs system prerequisites and updates APT cache on Debian/Ubuntu systems.
+# =============================================================================
+---
+- name: WireGuard | prerequisites | Update APT package cache (Debian)
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+  register: __wireguard_apt_update
+  retries: 3
+  delay: 5
+  until: __wireguard_apt_update is succeeded

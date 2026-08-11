@@ -1,0 +1,156 @@
+# =============================================================================
+# Ansible Role: WireGuard - Tasks: Key Management
+# =============================================================================
+# Manages target host cryptographic keys (private/public) and peer-pair PSKs.
+# All tasks touching key material have no_log: true enforced.
+# =============================================================================
+---
+- name: WireGuard | keys | Create WireGuard key directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ __wireguard_keys_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: WireGuard | keys | Check if host private key exists
+  become: true
+  ansible.builtin.stat:
+    path: "{{ __wireguard_keys_dir }}/private.key"
+  register: __wireguard_private_key_stat
+  no_log: true
+
+- name: WireGuard | keys | Remove old private key if regeneration requested
+  become: true
+  ansible.builtin.file:
+    path: "{{ __wireguard_keys_dir }}/private.key"
+    state: absent
+  when: wireguard_regenerate_keys | bool
+  no_log: true
+
+# Justification: Generate target host private key using 'wg genkey' with strict umask 077.
+- name: WireGuard | keys | Generate target host private key
+  become: true
+  ansible.builtin.shell: >-
+    set -o pipefail &&
+    umask 077 &&
+    wg genkey > {{ __wireguard_keys_dir }}/private.key
+  args:
+    executable: /bin/bash
+    creates: "{{ __wireguard_keys_dir }}/private.key"
+  no_log: true
+
+- name: WireGuard | keys | Ensure strict permissions on host private key
+  become: true
+  ansible.builtin.file:
+    path: "{{ __wireguard_keys_dir }}/private.key"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+
+- name: WireGuard | keys | Read host private key
+  become: true
+  ansible.builtin.slurp:
+    src: "{{ __wireguard_keys_dir }}/private.key"
+  register: __wireguard_slurped_private_key
+  no_log: true
+
+- name: WireGuard | keys | Set fact for host private key
+  ansible.builtin.set_fact:
+    __wireguard_private_key: "{{ __wireguard_slurped_private_key.content | b64decode | trim }}"
+  no_log: true
+
+# Justification: Derive public key from host private key using 'wg pubkey'.
+- name: WireGuard | keys | Derive target host public key
+  become: true
+  ansible.builtin.shell: >-
+    set -o pipefail &&
+    wg pubkey < {{ __wireguard_keys_dir }}/private.key > {{ __wireguard_keys_dir }}/public.key
+  args:
+    executable: /bin/bash
+  changed_when: false
+  no_log: true
+
+- name: WireGuard | keys | Ensure strict permissions on host public key
+  become: true
+  ansible.builtin.file:
+    path: "{{ __wireguard_keys_dir }}/public.key"
+    owner: root
+    group: root
+    mode: "0644"
+  no_log: true
+
+- name: WireGuard | keys | Read host public key
+  become: true
+  ansible.builtin.slurp:
+    src: "{{ __wireguard_keys_dir }}/public.key"
+  register: __wireguard_slurped_public_key
+  no_log: true
+
+- name: WireGuard | keys | Set fact for host public key
+  ansible.builtin.set_fact:
+    __wireguard_public_key: "{{ __wireguard_slurped_public_key.content | b64decode | trim }}"
+  no_log: true
+
+- name: WireGuard | keys | Compute mesh peer pairs
+  ansible.builtin.set_fact:
+    __wireguard_peer_pairs: >-
+      {%- set pairs = [] -%}
+      {%- set mesh_hosts = groups[wireguard_mesh_group] | default([inventory_hostname]) | sort -%}
+      {%- for h1 in mesh_hosts -%}
+        {%- for h2 in mesh_hosts -%}
+          {%- if h1 < h2 -%}
+            {%- set _ = pairs.append([h1, h2]) -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endfor -%}
+      {{ pairs }}
+  when: wireguard_use_preshared_keys | bool
+  no_log: true
+
+# Justification: Generate unique per-peer-pair pre-shared key (PSK) on primary host using 'wg genpsk'.
+- name: WireGuard | keys | Generate peer-pair PSK on primary host
+  become: true
+  ansible.builtin.shell: >-
+    set -o pipefail &&
+    umask 077 &&
+    wg genpsk > {{ __wireguard_keys_dir }}/psk_{{ item.0 }}_{{ item.1 }}
+  args:
+    executable: /bin/bash
+    creates: "{{ __wireguard_keys_dir }}/psk_{{ item.0 }}_{{ item.1 }}"
+  loop: "{{ __wireguard_peer_pairs | default([]) }}"
+  when:
+    - wireguard_use_preshared_keys | bool
+    - inventory_hostname == item.0
+  no_log: true
+
+- name: WireGuard | keys | Fetch peer-pair PSK from primary pair host
+  become: true
+  ansible.builtin.slurp:
+    src: "{{ __wireguard_keys_dir }}/psk_{{ item.0 }}_{{ item.1 }}"
+  delegate_to: "{{ item.0 }}"
+  register: __wireguard_slurped_psks
+  loop: "{{ __wireguard_peer_pairs | default([]) }}"
+  when:
+    - wireguard_use_preshared_keys | bool
+    - inventory_hostname in item
+  no_log: true
+
+- name: WireGuard | keys | Build per-peer PSK dictionary for host
+  ansible.builtin.set_fact:
+    __wireguard_psks: >-
+      {%- set psk_dict = {} -%}
+      {%- if __wireguard_slurped_psks is defined and __wireguard_slurped_psks.results is defined -%}
+        {%- for res in __wireguard_slurped_psks.results -%}
+          {%- if not res.skipped | default(false) and res.content is defined -%}
+            {%- set pair = res.item -%}
+            {%- set other_peer = pair.1 if inventory_hostname == pair.0 else pair.0 -%}
+            {%- set _ = psk_dict.update({other_peer: res.content | b64decode | trim}) -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endif -%}
+      {{ psk_dict }}
+  when: wireguard_use_preshared_keys | bool
+  no_log: true

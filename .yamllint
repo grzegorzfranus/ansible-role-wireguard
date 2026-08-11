@@ -10,3 +10,7 @@ rules:
     forbid-implicit-octal: true
     forbid-explicit-octal: true
   comments-indentation: false
+  comments:
+    min-spaces-from-content: 1
+  braces:
+    max-spaces-inside: 1

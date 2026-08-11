@@ -1,0 +1,35 @@
+# =============================================================================
+# Ansible Role: WireGuard - Tasks: Configure
+# =============================================================================
+# Renders the WireGuard interface configuration file and manages sysctl settings.
+# =============================================================================
+---
+- name: WireGuard | configure | Enable IPv4 packet forwarding
+  become: true
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: "1"
+    sysctl_set: true
+    state: present
+    reload: true
+  when: wireguard_enable_forwarding | bool
+
+- name: WireGuard | configure | Check if wg-quick tool exists for validation
+  ansible.builtin.command: "which wg-quick"
+  register: __wireguard_wg_quick_check
+  failed_when: false
+  changed_when: false
+
+- name: WireGuard | configure | Template WireGuard interface configuration (with validation)
+  become: true
+  ansible.builtin.template:
+    src: wg.conf.j2
+    dest: "{{ __wireguard_config_file }}"
+    owner: root
+    group: root
+    mode: "0600"
+    backup: true
+    validate: "{{ 'wg-quick strip %s' if __wireguard_wg_quick_check.rc == 0 else omit }}"
+  no_log: true
+  notify:
+    - WireGuard | handlers | Reload WireGuard configuration

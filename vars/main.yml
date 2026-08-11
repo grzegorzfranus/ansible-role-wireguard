@@ -1,0 +1,18 @@
+# =============================================================================
+# Ansible Role: WireGuard - Internal Variables
+# =============================================================================
+# Internal constants and computed values for the WireGuard role.
+# These are NOT user-overridable. All use double-underscore prefix per Red Hat CoP.
+# =============================================================================
+---
+# Directory path for WireGuard configuration files
+__wireguard_config_dir: "/etc/wireguard"
+
+# Directory path for storing host keys and per-pair pre-shared keys
+__wireguard_keys_dir: "/etc/wireguard/keys"
+
+# Full path to the WireGuard interface configuration file
+__wireguard_config_file: "/etc/wireguard/{{ wireguard_interface }}.conf"
+
+# Name of the systemd service unit for the WireGuard interface
+__wireguard_service_name: "wg-quick@{{ wireguard_interface }}"

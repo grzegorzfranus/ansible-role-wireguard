@@ -1,0 +1,28 @@
+# =============================================================================
+# Ansible Role: WireGuard - Tasks: Service Management
+# =============================================================================
+# Manages systemd service state for wg-quick@<interface>.
+# =============================================================================
+---
+- name: WireGuard | service | Check if WireGuard kernel module is loadable
+  ansible.builtin.command: "modprobe -n wireguard"
+  register: __wireguard_module_check
+  failed_when: false
+  changed_when: false
+
+- name: WireGuard | service | Enable WireGuard systemd service
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ __wireguard_service_name }}"
+    enabled: true
+  when:
+    - not ansible_check_mode
+
+- name: WireGuard | service | Start WireGuard systemd service
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ __wireguard_service_name }}"
+    state: started
+  when:
+    - not ansible_check_mode
+    - __wireguard_module_check.rc == 0
