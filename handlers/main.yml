@@ -4,6 +4,16 @@
 # Handlers triggered by configuration changes and service lifecycle events.
 # =============================================================================
 ---
+- name: WireGuard | handlers | Check if WireGuard interface exists
+  become: true
+  ansible.builtin.command: "ip link show {{ wireguard_interface }}"
+  register: __wireguard_interface_check
+  failed_when: false
+  changed_when: false
+  when:
+    - wireguard_state | lower != 'absent'
+    - not ansible_check_mode
+
 # Justification: Use shell module with process substitution <(wg-quick strip ...)
 # to apply configuration updates dynamically via 'wg syncconf' without dropping active tunnels.
 - name: WireGuard | handlers | Reload WireGuard configuration
@@ -18,6 +28,16 @@
   when:
     - wireguard_state | lower != 'absent'
     - not ansible_check_mode
+    - __wireguard_interface_check.rc | default(1) == 0
+
+- name: WireGuard | handlers | Check if WireGuard kernel module is loadable
+  ansible.builtin.command: "modprobe -n wireguard"
+  register: __wireguard_module_check_handler
+  failed_when: false
+  changed_when: false
+  when:
+    - wireguard_state | lower != 'absent'
+    - not ansible_check_mode
 
 - name: WireGuard | handlers | Restart WireGuard service
   listen: "Wireguard | handlers | Restart WireGuard service"
@@ -28,3 +48,4 @@
   when:
     - wireguard_state | lower != 'absent'
     - not ansible_check_mode
+    - __wireguard_module_check_handler.rc | default(1) == 0
