@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/grzegorzfranus/ansible-role-wireguard/compare/v1.1.0...v1.1.1) (2026-08-12)
+
+
+### Dependencies
+
+* **deps:** bump the minor-and-patch group across 1 directory with 2 updates ([#2](https://github.com/grzegorzfranus/ansible-role-wireguard/issues/2)) ([2678aed](https://github.com/grzegorzfranus/ansible-role-wireguard/commit/2678aedc9853d4f342ec8d5307d152fc50105583))
+
 ## [1.1.0](https://github.com/grzegorzfranus/ansible-role-wireguard/compare/v1.0.0...v1.1.0) (2026-08-12)
 
 
