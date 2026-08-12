@@ -16,7 +16,7 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -26,12 +26,14 @@ jobs:
     name: "🌿 Branch Name Lint"
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
     steps:
       - name: "🔍 Validate branch naming convention"
         env:
           HEAD_REF: ${{ github.head_ref }}
         run: |
-          PATTERN='^(feature|bugfix|fix|hotfix|release|chore|docs|refactor|test|build|ci|perf|revert)/[a-zA-Z0-9-]+$'
+          PATTERN='^(feature|bugfix|fix|hotfix|release|chore|docs|refactor|test|build|ci|perf|revert)/[a-zA-Z0-9-]+$|^release-please--.*$|^dependabot/.+$'
           if [[ ! "$HEAD_REF" =~ $PATTERN ]]; then
             {
               echo "### ❌ Branch Name Lint Failed"
@@ -39,7 +41,10 @@ jobs:
               echo "\`\`\`"
               echo "$PATTERN"
               echo "\`\`\`"
-              echo "Example valid branch name: \`feature/initial-wireguard-role\`"
+              echo "Examples of valid branch names:"
+              echo "- \`feature/initial-wireguard-role\`"
+              echo "- \`dependabot/github_actions/...\`"
+              echo "- \`release-please--branches--main\`"
             } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
@@ -55,6 +60,8 @@ jobs:
     name: "📝 PR Title Lint"
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
     steps:
       - name: "🔍 Validate PR title format"
         env:
@@ -82,6 +89,9 @@ jobs:
   # ---------------------------------------------------------------------------
   ci:
     name: "🧪 Ansible CI"
+    needs:
+      - branch-name-lint
+      - pr-title-lint
     uses: grzegorzfranus/github-workflows/.github/workflows/ansible-ci.yml@v3.0.1
     with:
       molecule-distros: '["ubuntu2604","ubuntu2404","debian13","debian12"]'
@@ -99,6 +109,8 @@ jobs:
       - pr-title-lint
       - ci
     if: always()
+    permissions:
+      contents: read
     steps:
       - name: "🚦 Evaluate CI pipeline results"
         env:
