@@ -19,7 +19,7 @@
         ansible_host: "192.0.2.12"
         wireguard_address: "10.8.0.12/24"
         wireguard_endpoint: "192.0.2.12"
-        __wireguard_public_key: "n67d4r9wF+7b9k5xM8L3n1P8Q2r4S6t8U0v2W4x6Y8Z="
+        __wireguard_public_key: "pOCSkrZRwni5dyxWn1+puxPZBrRqtoyd+dwrRAn4ogk="
   tasks:
     - name: Converge | Include WireGuard role
       ansible.builtin.include_role:
