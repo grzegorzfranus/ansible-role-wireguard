@@ -9,6 +9,7 @@ argument_specs:
       - Installs WireGuard via native APT package management on Ubuntu and Debian.
       - Builds a full-mesh WireGuard VPN topology across hosts in an inventory group.
       - Manages target host cryptographic keys securely with no_log protections.
+      - Configures optional dedicated logging via rsyslog, kernel dynamic debug, logrotate, and systemd status snapshots.
     options:
       wireguard_state:
         description: Target lifecycle state of WireGuard installation
@@ -77,5 +78,121 @@ argument_specs:
 
       wireguard_enable_forwarding:
         description: Enable IPv4 kernel packet forwarding via sysctl
+        type: bool
+        default: false
+
+      wireguard_configure_logging:
+        description: Master toggle to enable dedicated WireGuard logging with rsyslog and status snapshots
+        type: bool
+        default: false
+
+      wireguard_install_rsyslog:
+        description: Automatically install rsyslog and logrotate APT packages if missing
+        type: bool
+        default: true
+
+      wireguard_log_dir:
+        description: Base directory for WireGuard dedicated log files
+        type: str
+        default: "/var/log/wireguard"
+
+      wireguard_log_file:
+        description: Primary log file path for kernel dynamic debug and wg-quick messages
+        type: str
+        default: "/var/log/wireguard/wireguard.log"
+
+      wireguard_log_dir_permissions:
+        description: Directory octal permissions for wireguard_log_dir
+        type: str
+        default: "0750"
+
+      wireguard_log_file_permissions:
+        description: File octal permissions for WireGuard log files
+        type: str
+        default: "0640"
+
+      wireguard_log_user:
+        description: User owner for WireGuard log files and directory
+        type: str
+        default: "root"
+
+      wireguard_log_group:
+        description: Group owner for WireGuard log files and directory
+        type: str
+        default: "adm"
+
+      wireguard_rsyslog_config_file:
+        description: Filename for rsyslog configuration fragment in /etc/rsyslog.d/
+        type: str
+        default: "49-wireguard.conf"
+
+      wireguard_enable_kernel_debug_logging:
+        description: Enable kernel dynamic debug (dyndbg) logging for wireguard module
+        type: bool
+        default: true
+
+      wireguard_kernel_debug_persistent:
+        description: Persist kernel dynamic debug options across reboots via modprobe.d
+        type: bool
+        default: true
+
+      wireguard_enable_status_snapshot:
+        description: Enable periodic WireGuard status snapshot service and systemd timer
+        type: bool
+        default: true
+
+      wireguard_status_snapshot_file:
+        description: Log file path for periodic systemd WireGuard status snapshots
+        type: str
+        default: "/var/log/wireguard/wireguard-status.log"
+
+      wireguard_status_snapshot_interval:
+        description: Systemd timer execution interval for WireGuard status snapshots
+        type: str
+        default: "5min"
+
+      wireguard_logrotate_options:
+        description: Options dictionary for logrotate configuration
+        type: dict
+        options:
+          enabled:
+            description: Enable logrotate configuration for WireGuard logs
+            type: bool
+            default: true
+          frequency:
+            description: Log rotation frequency (hourly, daily, weekly, monthly)
+            type: str
+            default: "daily"
+          rotate_count:
+            description: Number of rotated log files to retain
+            type: int
+            default: 30
+          compress:
+            description: Compress rotated log files using gzip
+            type: bool
+            default: true
+          notifempty:
+            description: Do not rotate log file if it is empty
+            type: bool
+            default: true
+          copytruncate:
+            description: Truncate the original log file in place after creating a copy
+            type: bool
+            default: true
+          dateext:
+            description: Use date extension for rotated log files
+            type: bool
+            default: true
+          dateformat:
+            description: Date format string for dateext extension
+            type: str
+            default: "-%Y%m%d"
+          olddir:
+            description: Archive directory path to move rotated log files into
+            type: str
+            default: "/var/log/archive/wireguard"
+
+      wireguard_purge_logs:
+        description: Purge log files and log archive directory when wireguard_state is absent
         type: bool
         default: false

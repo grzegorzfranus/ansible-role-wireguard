@@ -17,7 +17,7 @@
 - name: WireGuard | configure | Template WireGuard interface configuration
   become: true
   ansible.builtin.template:
-    src: wg.conf.j2
+    src: wireguard/wg.conf.j2
     dest: "{{ __wireguard_config_file }}"
     owner: root
     group: root

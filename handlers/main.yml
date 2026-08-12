@@ -83,3 +83,32 @@
     - wireguard_state | lower != 'absent'
     - not ansible_check_mode
     - __wireguard_module_check_handler.rc | default(1) == 0
+
+# -----------------------------------------------------------------------------
+# Logging Handlers
+# -----------------------------------------------------------------------------
+
+- name: WireGuard | handlers | Restart rsyslog
+  listen: "WireGuard | handlers | Restart rsyslog"
+  become: true
+  ansible.builtin.systemd:
+    name: rsyslog
+    state: restarted
+  when: not ansible_check_mode
+
+- name: WireGuard | handlers | Reload systemd
+  listen: "WireGuard | handlers | Reload systemd"
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: not ansible_check_mode
+
+- name: WireGuard | handlers | Restart status timer
+  listen: "WireGuard | handlers | Restart status timer"
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ __wireguard_status_unit_name }}.timer"
+    state: restarted
+  when:
+    - wireguard_state | lower != 'absent'
+    - not ansible_check_mode

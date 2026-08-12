@@ -1,0 +1,9 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+{{ ansible_managed | comment }}
+[Unit]
+Description=WireGuard Status Snapshot Service
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'echo "=== $(date -u --iso-8601=seconds) ===" >> {{ wireguard_status_snapshot_file }} && /usr/bin/wg show all dump >> {{ wireguard_status_snapshot_file }}'

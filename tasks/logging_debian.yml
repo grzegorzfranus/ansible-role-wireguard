@@ -1,0 +1,14 @@
+# =============================================================================
+# Ansible Role: WireGuard - Tasks: Logging (Debian/Ubuntu)
+# =============================================================================
+# Installs rsyslog and logrotate packages on Debian/Ubuntu systems.
+# =============================================================================
+---
+- name: WireGuard | logging_debian | Install rsyslog and logrotate packages
+  become: true
+  ansible.builtin.package:
+    name:
+      - rsyslog
+      - logrotate
+    state: present
+  when: wireguard_install_rsyslog | bool

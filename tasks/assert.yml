@@ -168,3 +168,176 @@
       - wireguard_purge_keys is boolean
     fail_msg: "wireguard_purge_keys must be a boolean (true or false)"
     success_msg: "wireguard_purge_keys validated: {{ wireguard_purge_keys }}"
+
+# -----------------------------------------------------------------------------
+# 4. Logging & Observability Settings
+# -----------------------------------------------------------------------------
+
+- name: WireGuard | assert | Validate wireguard_configure_logging
+  ansible.builtin.assert:
+    that:
+      - wireguard_configure_logging is defined
+      - wireguard_configure_logging is boolean
+    fail_msg: "wireguard_configure_logging must be a boolean (true or false)"
+    success_msg: "wireguard_configure_logging validated: {{ wireguard_configure_logging }}"
+
+- name: WireGuard | assert | Validate wireguard_install_rsyslog
+  ansible.builtin.assert:
+    that:
+      - wireguard_install_rsyslog is defined
+      - wireguard_install_rsyslog is boolean
+    fail_msg: "wireguard_install_rsyslog must be a boolean (true or false)"
+    success_msg: "wireguard_install_rsyslog validated: {{ wireguard_install_rsyslog }}"
+  when: wireguard_configure_logging | bool
+
+- name: WireGuard | assert | Validate wireguard_log_dir
+  ansible.builtin.assert:
+    that:
+      - wireguard_log_dir is defined
+      - wireguard_log_dir is string
+      - wireguard_log_dir | length > 0
+      - wireguard_log_dir is match('^/')
+    fail_msg: "wireguard_log_dir must be a non-empty absolute path starting with '/'"
+    success_msg: "wireguard_log_dir validated: {{ wireguard_log_dir }}"
+  when: wireguard_configure_logging | bool
+
+- name: WireGuard | assert | Validate wireguard_log_file
+  ansible.builtin.assert:
+    that:
+      - wireguard_log_file is defined
+      - wireguard_log_file is string
+      - wireguard_log_file | length > 0
+      - wireguard_log_file is match('^/')
+    fail_msg: "wireguard_log_file must be a non-empty absolute path starting with '/'"
+    success_msg: "wireguard_log_file validated: {{ wireguard_log_file }}"
+  when: wireguard_configure_logging | bool
+
+- name: WireGuard | assert | Validate wireguard_log_dir_permissions
+  ansible.builtin.assert:
+    that:
+      - wireguard_log_dir_permissions is defined
+      - wireguard_log_dir_permissions is string
+      - wireguard_log_dir_permissions is match('^0[0-7]{3}$')
+    fail_msg: "wireguard_log_dir_permissions must be a valid 4-digit octal permission string (e.g. '0750')"
+    success_msg: "wireguard_log_dir_permissions validated: {{ wireguard_log_dir_permissions }}"
+  when: wireguard_configure_logging | bool
+
+- name: WireGuard | assert | Validate wireguard_log_file_permissions
+  ansible.builtin.assert:
+    that:
+      - wireguard_log_file_permissions is defined
+      - wireguard_log_file_permissions is string
+      - wireguard_log_file_permissions is match('^0[0-7]{3}$')
+    fail_msg: "wireguard_log_file_permissions must be a valid 4-digit octal permission string (e.g. '0640')"
+    success_msg: "wireguard_log_file_permissions validated: {{ wireguard_log_file_permissions }}"
+  when: wireguard_configure_logging | bool
+
+- name: WireGuard | assert | Validate wireguard_log_user
+  ansible.builtin.assert:
+    that:
+      - wireguard_log_user is defined
+      - wireguard_log_user is string
+      - wireguard_log_user | length > 0
+    fail_msg: "wireguard_log_user must be a non-empty string"
+    success_msg: "wireguard_log_user validated: {{ wireguard_log_user }}"
+  when: wireguard_configure_logging | bool
+
+- name: WireGuard | assert | Validate wireguard_log_group
+  ansible.builtin.assert:
+    that:
+      - wireguard_log_group is defined
+      - wireguard_log_group is string
+      - wireguard_log_group | length > 0
+    fail_msg: "wireguard_log_group must be a non-empty string"
+    success_msg: "wireguard_log_group validated: {{ wireguard_log_group }}"
+  when: wireguard_configure_logging | bool
+
+- name: WireGuard | assert | Validate wireguard_rsyslog_config_file
+  ansible.builtin.assert:
+    that:
+      - wireguard_rsyslog_config_file is defined
+      - wireguard_rsyslog_config_file is string
+      - wireguard_rsyslog_config_file | length > 0
+      - wireguard_rsyslog_config_file is match('^[a-zA-Z0-9_-]+\.conf$')
+    fail_msg: "wireguard_rsyslog_config_file must be a valid filename ending with '.conf'"
+    success_msg: "wireguard_rsyslog_config_file validated: {{ wireguard_rsyslog_config_file }}"
+  when: wireguard_configure_logging | bool
+
+- name: WireGuard | assert | Validate wireguard_enable_kernel_debug_logging
+  ansible.builtin.assert:
+    that:
+      - wireguard_enable_kernel_debug_logging is defined
+      - wireguard_enable_kernel_debug_logging is boolean
+    fail_msg: "wireguard_enable_kernel_debug_logging must be a boolean (true or false)"
+    success_msg: "wireguard_enable_kernel_debug_logging validated: {{ wireguard_enable_kernel_debug_logging }}"
+  when: wireguard_configure_logging | bool
+
+- name: WireGuard | assert | Validate wireguard_kernel_debug_persistent
+  ansible.builtin.assert:
+    that:
+      - wireguard_kernel_debug_persistent is defined
+      - wireguard_kernel_debug_persistent is boolean
+    fail_msg: "wireguard_kernel_debug_persistent must be a boolean (true or false)"
+    success_msg: "wireguard_kernel_debug_persistent validated: {{ wireguard_kernel_debug_persistent }}"
+  when: wireguard_configure_logging | bool
+
+- name: WireGuard | assert | Validate wireguard_enable_status_snapshot
+  ansible.builtin.assert:
+    that:
+      - wireguard_enable_status_snapshot is defined
+      - wireguard_enable_status_snapshot is boolean
+    fail_msg: "wireguard_enable_status_snapshot must be a boolean (true or false)"
+    success_msg: "wireguard_enable_status_snapshot validated: {{ wireguard_enable_status_snapshot }}"
+  when: wireguard_configure_logging | bool
+
+- name: WireGuard | assert | Validate wireguard_status_snapshot_file
+  ansible.builtin.assert:
+    that:
+      - wireguard_status_snapshot_file is defined
+      - wireguard_status_snapshot_file is string
+      - wireguard_status_snapshot_file | length > 0
+      - wireguard_status_snapshot_file is match('^/')
+    fail_msg: "wireguard_status_snapshot_file must be a non-empty absolute path starting with '/'"
+    success_msg: "wireguard_status_snapshot_file validated: {{ wireguard_status_snapshot_file }}"
+  when: wireguard_configure_logging | bool
+
+- name: WireGuard | assert | Validate wireguard_status_snapshot_interval
+  ansible.builtin.assert:
+    that:
+      - wireguard_status_snapshot_interval is defined
+      - wireguard_status_snapshot_interval is string
+      - wireguard_status_snapshot_interval is match('^[0-9]+(s|sec|m|min|h|hour)$')
+    fail_msg: "wireguard_status_snapshot_interval must be a systemd time span string (e.g. '5min', '1h')"
+    success_msg: "wireguard_status_snapshot_interval validated: {{ wireguard_status_snapshot_interval }}"
+  when: wireguard_configure_logging | bool
+
+- name: WireGuard | assert | Validate wireguard_logrotate_options dictionary keys and values
+  ansible.builtin.assert:
+    that:
+      - wireguard_logrotate_options is defined
+      - wireguard_logrotate_options is mapping
+      - wireguard_logrotate_options.enabled is defined
+      - wireguard_logrotate_options.enabled is boolean
+      - wireguard_logrotate_options.frequency is defined
+      - wireguard_logrotate_options.frequency in ['hourly', 'daily', 'weekly', 'monthly']
+      - wireguard_logrotate_options.rotate_count is defined
+      - wireguard_logrotate_options.rotate_count | int >= 1
+      - wireguard_logrotate_options.compress is defined
+      - wireguard_logrotate_options.compress is boolean
+      - wireguard_logrotate_options.notifempty is defined
+      - wireguard_logrotate_options.notifempty is boolean
+      - wireguard_logrotate_options.copytruncate is defined
+      - wireguard_logrotate_options.copytruncate is boolean
+      - wireguard_logrotate_options.dateext is defined
+      - wireguard_logrotate_options.dateext is boolean
+    fail_msg: "wireguard_logrotate_options must be a dictionary with valid keys (enabled, frequency, rotate_count, compress, notifempty, copytruncate, dateext)"
+    success_msg: "wireguard_logrotate_options validated successfully"
+  when: wireguard_configure_logging | bool
+
+- name: WireGuard | assert | Validate wireguard_purge_logs
+  ansible.builtin.assert:
+    that:
+      - wireguard_purge_logs is defined
+      - wireguard_purge_logs is boolean
+    fail_msg: "wireguard_purge_logs must be a boolean (true or false)"
+    success_msg: "wireguard_purge_logs validated: {{ wireguard_purge_logs }}"

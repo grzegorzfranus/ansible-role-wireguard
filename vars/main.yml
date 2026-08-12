@@ -16,3 +16,12 @@ __wireguard_config_file: "/etc/wireguard/{{ wireguard_interface }}.conf"
 
 # Name of the systemd service unit for the WireGuard interface
 __wireguard_service_name: "wg-quick@{{ wireguard_interface }}"
+
+# File path for modprobe configuration options for WireGuard dynamic debug
+__wireguard_modprobe_config_file: "/etc/modprobe.d/wireguard.conf"
+
+# File path for kernel dynamic debug runtime control interface
+__wireguard_dyndbg_control_file: "/proc/dynamic_debug/control"
+
+# Name of the systemd unit for periodic WireGuard status snapshots
+__wireguard_status_unit_name: "wireguard-status"

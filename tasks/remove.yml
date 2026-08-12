@@ -35,6 +35,56 @@
     state: absent
   when: wireguard_purge_keys | bool
 
+- name: WireGuard | remove | Stop and disable status snapshot systemd timer
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ __wireguard_status_unit_name }}.timer"
+    state: stopped
+    enabled: false
+  failed_when: false
+  when: not ansible_check_mode
+
+- name: WireGuard | remove | Remove status snapshot systemd service and timer units
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "/etc/systemd/system/{{ __wireguard_status_unit_name }}.service"
+    - "/etc/systemd/system/{{ __wireguard_status_unit_name }}.timer"
+  notify:
+    - WireGuard | handlers | Reload systemd
+
+- name: WireGuard | remove | Remove rsyslog logging configuration fragment
+  become: true
+  ansible.builtin.file:
+    path: "/etc/rsyslog.d/{{ wireguard_rsyslog_config_file }}"
+    state: absent
+  notify:
+    - WireGuard | handlers | Restart rsyslog
+
+- name: WireGuard | remove | Remove logrotate configuration file
+  become: true
+  ansible.builtin.file:
+    path: "/etc/logrotate.d/wireguard"
+    state: absent
+
+- name: WireGuard | remove | Remove modprobe dynamic debug configuration file
+  become: true
+  ansible.builtin.file:
+    path: "{{ __wireguard_modprobe_config_file }}"
+    state: absent
+
+- name: WireGuard | remove | Purge log files and log archive directory if requested
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ wireguard_log_dir }}"
+    - "{{ wireguard_logrotate_options.olddir }}"
+  when: wireguard_purge_logs | bool
+
 - name: WireGuard | remove | Remove APT packages (Debian)
   ansible.builtin.include_tasks: remove_debian.yml
   when:

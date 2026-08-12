@@ -24,6 +24,7 @@ galaxy_info:
     - vpn
     - mesh
     - security
+    - logging
 collections:
   - ansible.posix
 dependencies: []

@@ -1,0 +1,11 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+{{ ansible_managed | comment }}
+[Unit]
+Description=Periodic WireGuard Status Snapshot Timer
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec={{ wireguard_status_snapshot_interval }}
+
+[Install]
+WantedBy=timers.target

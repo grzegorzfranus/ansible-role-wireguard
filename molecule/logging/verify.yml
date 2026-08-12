@@ -1,0 +1,128 @@
+---
+- name: Verify
+  hosts: instance
+  become: true
+  tasks:
+    - name: Verify | Check rsyslog configuration fragment existence and content
+      ansible.builtin.stat:
+        path: /etc/rsyslog.d/49-wireguard.conf
+      register: __v_rsyslog_stat
+
+    - name: Verify | Assert rsyslog configuration fragment exists
+      ansible.builtin.assert:
+        that:
+          - __v_rsyslog_stat.stat.exists | bool
+          - __v_rsyslog_stat.stat.mode == '0644'
+        fail_msg: "/etc/rsyslog.d/49-wireguard.conf does not exist or has incorrect permissions"
+        success_msg: "/etc/rsyslog.d/49-wireguard.conf exists with mode 0644"
+
+    - name: Verify | Read rsyslog configuration file content
+      ansible.builtin.slurp:
+        src: /etc/rsyslog.d/49-wireguard.conf
+      register: __v_rsyslog_content
+
+    - name: Verify | Assert rsyslog configuration rules content
+      vars:
+        __rsyslog_text: "{{ __v_rsyslog_content.content | b64decode }}"
+      ansible.builtin.assert:
+        that:
+          - "'syslogfacility-text == \"kern\"' in __rsyslog_text"
+          - "'msg contains \"wireguard:\"' in __rsyslog_text"
+          - "'programname == \"wg-quick\"' in __rsyslog_text"
+          - "'stop' in __rsyslog_text"
+        fail_msg: "/etc/rsyslog.d/49-wireguard.conf is missing expected routing rules or stop action"
+        success_msg: "/etc/rsyslog.d/49-wireguard.conf contains expected rules and stop actions"
+
+    - name: Verify | Check logrotate configuration file existence
+      ansible.builtin.stat:
+        path: /etc/logrotate.d/wireguard
+      register: __v_logrotate_stat
+
+    - name: Verify | Assert logrotate configuration file exists
+      ansible.builtin.assert:
+        that:
+          - __v_logrotate_stat.stat.exists | bool
+          - __v_logrotate_stat.stat.mode == '0644'
+        fail_msg: "/etc/logrotate.d/wireguard does not exist or has incorrect permissions"
+        success_msg: "/etc/logrotate.d/wireguard exists with mode 0644"
+
+    - name: Verify | Validate logrotate configuration syntax using debug run
+      ansible.builtin.command: "logrotate -d /etc/logrotate.d/wireguard"
+      register: __v_logrotate_debug
+      changed_when: false
+
+    - name: Verify | Assert logrotate debug run succeeded
+      ansible.builtin.assert:
+        that:
+          - __v_logrotate_debug.rc == 0
+        fail_msg: "logrotate -d /etc/logrotate.d/wireguard failed syntax validation"
+        success_msg: "logrotate configuration syntax validated successfully"
+
+    - name: Verify | Check modprobe dynamic debug configuration file existence
+      ansible.builtin.stat:
+        path: /etc/modprobe.d/wireguard.conf
+      register: __v_modprobe_stat
+
+    - name: Verify | Assert modprobe configuration file exists
+      ansible.builtin.assert:
+        that:
+          - __v_modprobe_stat.stat.exists | bool
+          - __v_modprobe_stat.stat.mode == '0644'
+        fail_msg: "/etc/modprobe.d/wireguard.conf does not exist or has incorrect permissions"
+        success_msg: "/etc/modprobe.d/wireguard.conf exists with mode 0644"
+
+    - name: Verify | Read modprobe configuration file content
+      ansible.builtin.slurp:
+        src: /etc/modprobe.d/wireguard.conf
+      register: __v_modprobe_content
+
+    - name: Verify | Assert modprobe dyndbg option content
+      vars:
+        __modprobe_text: "{{ __v_modprobe_content.content | b64decode }}"
+      ansible.builtin.assert:
+        that:
+          - "'options wireguard dyndbg=+p' in __modprobe_text"
+        fail_msg: "/etc/modprobe.d/wireguard.conf does not contain 'options wireguard dyndbg=+p'"
+        success_msg: "/etc/modprobe.d/wireguard.conf contains dyndbg option"
+
+    - name: Verify | Check log directory existence and permissions
+      ansible.builtin.stat:
+        path: /var/log/wireguard
+      register: __v_logdir_stat
+
+    - name: Verify | Assert log directory permissions and owner
+      ansible.builtin.assert:
+        that:
+          - __v_logdir_stat.stat.exists | bool
+          - __v_logdir_stat.stat.isdir | bool
+          - __v_logdir_stat.stat.mode == '0750'
+          - __v_logdir_stat.stat.pw_name == 'root'
+          - __v_logdir_stat.stat.gr_name == 'adm'
+        fail_msg: "/var/log/wireguard directory has incorrect permissions or owner/group"
+        success_msg: "/var/log/wireguard directory verified with mode 0750 root:adm"
+
+    - name: Verify | Check status snapshot service unit existence
+      ansible.builtin.stat:
+        path: /etc/systemd/system/wireguard-status.service
+      register: __v_service_unit_stat
+
+    - name: Verify | Assert status snapshot service unit exists
+      ansible.builtin.assert:
+        that:
+          - __v_service_unit_stat.stat.exists | bool
+          - __v_service_unit_stat.stat.mode == '0644'
+        fail_msg: "/etc/systemd/system/wireguard-status.service unit missing or has invalid permissions"
+        success_msg: "/etc/systemd/system/wireguard-status.service unit exists with mode 0644"
+
+    - name: Verify | Check status snapshot timer unit existence
+      ansible.builtin.stat:
+        path: /etc/systemd/system/wireguard-status.timer
+      register: __v_timer_unit_stat
+
+    - name: Verify | Assert status snapshot timer unit exists
+      ansible.builtin.assert:
+        that:
+          - __v_timer_unit_stat.stat.exists | bool
+          - __v_timer_unit_stat.stat.mode == '0644'
+        fail_msg: "/etc/systemd/system/wireguard-status.timer unit missing or has invalid permissions"
+        success_msg: "/etc/systemd/system/wireguard-status.timer unit exists with mode 0644"

@@ -1,0 +1,14 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+{{ ansible_managed | comment }}
+# Note: The 'stop' action prevents duplicate output to /var/log/syslog and /var/log/kern.log.
+# Journald continues to receive kernel and service messages independently (Alloy -> Loki pipeline unaffected).
+
+if ($syslogfacility-text == "kern") and ($msg contains "wireguard:") then {
+    action(type="omfile" file="{{ wireguard_log_file }}")
+    stop
+}
+
+if ($programname == "wg-quick") then {
+    action(type="omfile" file="{{ wireguard_log_file }}")
+    stop
+}
