@@ -92,7 +92,7 @@ jobs:
     needs:
       - branch-name-lint
       - pr-title-lint
-    uses: grzegorzfranus/github-workflows/.github/workflows/ansible-ci.yml@v3.0.1
+    uses: grzegorzfranus/github-workflows/.github/workflows/ansible-ci.yml@v3.1.1
     with:
       molecule-distros: '["ubuntu2604","ubuntu2404","debian13","debian12"]'
       molecule-scenarios: '["default"]'
