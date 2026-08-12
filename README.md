@@ -326,45 +326,49 @@ For nodes behind NAT gateways or stateful firewalls, set `wireguard_persistent_k
 
 ```text
 ansible-role-wireguard/
-├── .ansible-lint
-├── .gitignore
-├── .release-please-manifest.json
-├── .yamllint
-├── CHANGELOG.md
-├── LICENSE
-├── README.md
+├── .github/
+│   ├── ISSUE_TEMPLATE/          # Issue report templates (bug, feature, task)
+│   │   ├── bug_report.yml
+│   │   ├── config.yml
+│   │   ├── feature_request.yml
+│   │   └── task.yml
+│   ├── PULL_REQUEST_TEMPLATE/    # Pull request description template
+│   │   └── pull_request_template.md
+│   ├── workflows/               # Centralized GitHub Actions CI/CD workflows
+│   │   ├── ci.yml
+│   │   └── release.yml
+│   └── dependabot.yml           # Dependabot configuration for GitHub Actions
 ├── defaults/
-│   └── main.yml
+│   └── main.yml                 # Default configuration variables
 ├── handlers/
-│   └── main.yml
+│   └── main.yml                 # Dynamic reload and service restart handlers
 ├── meta/
-│   ├── argument_specs.yml
-│   └── main.yml
-├── molecule/
-│   └── default/
+│   ├── main.yml                 # Role metadata and Galaxy specifications
+│   └── argument_specs.yml       # Native argument specification validation
+├── molecule/                    # Molecule testing framework
+│   └── default/                 # Default testing scenario
 │       ├── converge.yml
 │       ├── molecule.yml
 │       ├── prepare.yml
 │       └── verify.yml
-├── release-please-config.json
 ├── tasks/
-│   ├── assert.yml
-│   ├── configure.yml
-│   ├── install.yml
-│   ├── install_debian.yml
-│   ├── keys.yml
-│   ├── main.yml
-│   ├── mesh_facts.yml
-│   ├── prerequisites.yml
-│   ├── prerequisites_debian.yml
-│   ├── remove.yml
-│   ├── remove_debian.yml
-│   └── service.yml
+│   ├── main.yml                 # Main task orchestration
+│   ├── assert.yml               # Preflight parameter assertions
+│   ├── prerequisites.yml        # OS-family prerequisites dispatcher
+│   ├── prerequisites_debian.yml # APT repository prerequisites (Debian/Ubuntu)
+│   ├── install.yml              # Package installation dispatcher
+│   ├── install_debian.yml       # APT package installation (Debian/Ubuntu)
+│   ├── keys.yml                 # Host keypair & per-pair PSK management
+│   ├── mesh_facts.yml           # Full-mesh topology discovery & key exchange
+│   ├── configure.yml            # WireGuard configuration deployment
+│   ├── service.yml              # Service state management
+│   ├── remove.yml               # Removal dispatcher
+│   └── remove_debian.yml        # APT package removal (Debian/Ubuntu)
 ├── templates/
-│   └── wg.conf.j2
+│   └── wg.conf.j2               # Main WireGuard interface configuration template
 └── vars/
-    ├── debian.yml
-    └── main.yml
+    ├── main.yml                 # Internal constants
+    └── debian.yml               # Debian/Ubuntu OS package definitions
 ```
 
 ---
