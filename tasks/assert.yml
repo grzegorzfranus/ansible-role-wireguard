@@ -83,9 +83,20 @@
   when: wireguard_state | lower != 'absent'
 
 - name: WireGuard | assert | Validate wireguard_address is inside wireguard_network
+  vars:
+    __addr_ip: "{{ wireguard_address.split('/')[0] }}"
+    __addr_prefix: "{{ wireguard_address.split('/')[1] | int }}"
+    __net_ip: "{{ wireguard_network.split('/')[0] }}"
+    __net_prefix: "{{ wireguard_network.split('/')[1] | int }}"
+    __addr_octets: "{{ __addr_ip.split('.') }}"
+    __net_octets: "{{ __net_ip.split('.') }}"
+    __addr_int: "{{ (__addr_octets[0] | int * 16777216) + (__addr_octets[1] | int * 65536) + (__addr_octets[2] | int * 256) + (__addr_octets[3] | int) }}"
+    __net_int: "{{ (__net_octets[0] | int * 16777216) + (__net_octets[1] | int * 65536) + (__net_octets[2] | int * 256) + (__net_octets[3] | int) }}"
+    __shift: "{{ 32 - (__net_prefix | int) }}"
+    __is_inside: "{{ (__addr_prefix | int == __net_prefix | int) and ((__addr_int | int // (2 ** (__shift | int))) == (__net_int | int // (2 ** (__shift | int)))) }}"
   ansible.builtin.assert:
     that:
-      - wireguard_address | ansible.utils.ipaddr(wireguard_network)
+      - __is_inside | bool
     fail_msg: "wireguard_address ({{ wireguard_address }}) is not inside wireguard_network ({{ wireguard_network }})"
     success_msg: "wireguard_address {{ wireguard_address }} is inside subnet {{ wireguard_network }}"
   when: wireguard_state | lower != 'absent'
