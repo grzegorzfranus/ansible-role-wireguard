@@ -14,6 +14,7 @@
 #   1. Lifecycle Settings
 #   2. Network & Interface Settings
 #   3. Key Management & Security Settings
+#   4. Logging & Observability Settings
 # =============================================================================
 ---
 # -----------------------------------------------------------------------------
@@ -86,3 +87,82 @@ wireguard_regenerate_keys: false
 # Purge private keys, public keys, and PSKs when wireguard_state is absent
 # Valid values: true, false
 wireguard_purge_keys: false
+
+# -----------------------------------------------------------------------------
+# 4. Logging & Observability Settings
+# -----------------------------------------------------------------------------
+# Controls dedicated rsyslog routing, kernel dynamic debug, logrotate, and status snapshots
+
+# Master toggle for dedicated WireGuard logging configuration
+# Valid values: true, false
+wireguard_configure_logging: false
+
+# Install rsyslog and logrotate packages if not present on target host
+# Valid values: true, false
+wireguard_install_rsyslog: true
+
+# Base directory for WireGuard dedicated log files
+# Valid values: absolute directory path string (e.g. "/var/log/wireguard")
+wireguard_log_dir: "/var/log/wireguard"
+
+# Primary log file path for kernel dyndbg and wg-quick events
+# Valid values: absolute file path string
+wireguard_log_file: "{{ wireguard_log_dir }}/wireguard.log"
+
+# Directory permissions for wireguard_log_dir
+# Valid values: octal permission string (e.g. "0750")
+wireguard_log_dir_permissions: "0750"
+
+# File permissions for WireGuard log files
+# Valid values: octal permission string (e.g. "0640")
+wireguard_log_file_permissions: "0640"
+
+# User owner for WireGuard log directory and log files
+# Valid values: system user string (e.g. "root")
+wireguard_log_user: "root"
+
+# Group owner for WireGuard log directory and log files
+# Valid values: system group string (e.g. "adm")
+wireguard_log_group: "adm"
+
+# Filename for rsyslog configuration fragment under /etc/rsyslog.d/
+# Valid values: filename string ending with .conf (e.g. "49-wireguard.conf")
+wireguard_rsyslog_config_file: "49-wireguard.conf"
+
+# Enable kernel dynamic debug (dyndbg) logging for WireGuard kernel module
+# Note: Kernel dyndbg logs public IPs and peer indices to dmesg/kern log
+# Valid values: true, false
+wireguard_enable_kernel_debug_logging: true
+
+# Persist kernel dynamic debug options across reboots via /etc/modprobe.d/wireguard.conf
+# Valid values: true, false
+wireguard_kernel_debug_persistent: true
+
+# Enable periodic WireGuard status snapshot service and systemd timer
+# Valid values: true, false
+wireguard_enable_status_snapshot: true
+
+# Output log file path for periodic systemd WireGuard status snapshots
+# Valid values: absolute file path string
+wireguard_status_snapshot_file: "{{ wireguard_log_dir }}/wireguard-status.log"
+
+# Interval between status snapshots (systemd timer format)
+# Valid values: systemd time span string (e.g. "5min", "15min", "1h")
+wireguard_status_snapshot_interval: "5min"
+
+# Logrotate options dictionary for log rotation and archive management
+# Valid values: dict containing enabled, frequency, rotate_count, compress, etc.
+wireguard_logrotate_options:
+  enabled: true
+  frequency: "daily"
+  rotate_count: 30
+  compress: true
+  notifempty: true
+  copytruncate: true
+  dateext: true
+  dateformat: "-%Y%m%d"
+  olddir: "/var/log/archive/wireguard"
+
+# Purge log files and log archive directory when wireguard_state is absent
+# Valid values: true, false
+wireguard_purge_logs: false

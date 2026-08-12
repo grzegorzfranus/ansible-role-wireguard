@@ -1,0 +1,34 @@
+#jinja2: trim_blocks: True, lstrip_blocks: True
+{{ ansible_managed | comment }}
+{{ wireguard_log_file }}
+{{ wireguard_status_snapshot_file }} {
+    {{ wireguard_logrotate_options.frequency }}
+    rotate {{ wireguard_logrotate_options.rotate_count }}
+{% if wireguard_logrotate_options.compress | bool %}
+    compress
+{% else %}
+    nocompress
+{% endif %}
+{% if wireguard_logrotate_options.notifempty | bool %}
+    notifempty
+{% else %}
+    ifempty
+{% endif %}
+{% if wireguard_logrotate_options.copytruncate | bool %}
+    copytruncate
+{% endif %}
+{% if wireguard_logrotate_options.dateext | bool %}
+    dateext
+{% endif %}
+{% if wireguard_logrotate_options.dateformat is defined and wireguard_logrotate_options.dateformat | length > 0 %}
+    dateformat {{ wireguard_logrotate_options.dateformat }}
+{% endif %}
+    missingok
+    create {{ wireguard_log_file_permissions }} {{ wireguard_log_user }} {{ wireguard_log_group }}
+{% if wireguard_logrotate_options.olddir is defined and wireguard_logrotate_options.olddir | length > 0 %}
+    olddir {{ wireguard_logrotate_options.olddir }}
+{% endif %}
+    postrotate
+        /usr/bin/systemctl reload rsyslog > /dev/null 2>&1 || true
+    endscript
+}

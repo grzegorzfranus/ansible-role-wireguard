@@ -50,6 +50,13 @@
   when: wireguard_state | lower != 'absent'
   tags: [configure]
 
+- name: WireGuard | main | Configure dedicated logging
+  ansible.builtin.import_tasks: logging.yml
+  when:
+    - wireguard_state | lower != 'absent'
+    - wireguard_configure_logging | bool
+  tags: [logging, configure]
+
 - name: WireGuard | main | Manage WireGuard service state
   ansible.builtin.import_tasks: service.yml
   when: wireguard_state | lower != 'absent'

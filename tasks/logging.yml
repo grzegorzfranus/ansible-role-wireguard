@@ -1,0 +1,202 @@
+# =============================================================================
+# Ansible Role: WireGuard - Tasks: Logging Orchestrator
+# =============================================================================
+# Configures dedicated rsyslog routing, kernel dyndbg, logrotate, and systemd status timer.
+# =============================================================================
+---
+- name: WireGuard | logging | Dispatch OS specific logging tasks
+  ansible.builtin.include_tasks: logging_debian.yml
+  when: ansible_facts['os_family'] == 'Debian'
+
+# noqa: command-instead-of-module
+- name: WireGuard | logging | Check rsyslog availability when auto-install is disabled
+  ansible.builtin.command: "systemctl list-unit-files rsyslog.service"
+  register: __wireguard_rsyslog_unit_check
+  failed_when: false
+  changed_when: false
+  when: not wireguard_install_rsyslog | bool
+
+- name: WireGuard | logging | Fail if rsyslog is not installed and auto-install is disabled
+  ansible.builtin.fail:
+    msg: "rsyslog is required when wireguard_configure_logging is enabled. Install it manually or set wireguard_install_rsyslog: true."
+  when:
+    - not wireguard_install_rsyslog | bool
+    - "'rsyslog.service' not in __wireguard_rsyslog_unit_check.stdout | default('')"
+
+- name: WireGuard | logging | Ensure log directory exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ wireguard_log_dir }}"
+    state: directory
+    owner: "{{ wireguard_log_user }}"
+    group: "{{ wireguard_log_group }}"
+    mode: "{{ wireguard_log_dir_permissions }}"
+
+- name: WireGuard | logging | Ensure wireguard.log file exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ wireguard_log_file }}"
+    state: touch
+    owner: "{{ wireguard_log_user }}"
+    group: "{{ wireguard_log_group }}"
+    mode: "{{ wireguard_log_file_permissions }}"
+    modification_time: preserve
+    access_time: preserve
+
+- name: WireGuard | logging | Ensure wireguard-status.log file exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ wireguard_status_snapshot_file }}"
+    state: touch
+    owner: "{{ wireguard_log_user }}"
+    group: "{{ wireguard_log_group }}"
+    mode: "{{ wireguard_log_file_permissions }}"
+    modification_time: preserve
+    access_time: preserve
+  when: wireguard_enable_status_snapshot | bool
+
+- name: WireGuard | logging | Ensure logrotate archive directory exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ wireguard_logrotate_options.olddir }}"
+    state: directory
+    owner: "{{ wireguard_log_user }}"
+    group: "{{ wireguard_log_group }}"
+    mode: "{{ wireguard_log_dir_permissions }}"
+  when:
+    - wireguard_logrotate_options.enabled | bool
+    - wireguard_logrotate_options.olddir is defined
+    - wireguard_logrotate_options.olddir | length > 0
+
+- name: WireGuard | logging | Template rsyslog configuration fragment
+  become: true
+  ansible.builtin.template:
+    src: rsyslog/wireguard.conf.j2
+    dest: "/etc/rsyslog.d/{{ wireguard_rsyslog_config_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  notify:
+    - WireGuard | handlers | Restart rsyslog
+
+- name: WireGuard | logging | Ensure modprobe configuration directory exists
+  become: true
+  ansible.builtin.file:
+    path: "/etc/modprobe.d"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when:
+    - wireguard_enable_kernel_debug_logging | bool
+    - wireguard_kernel_debug_persistent | bool
+
+- name: WireGuard | logging | Template modprobe dynamic debug configuration
+  become: true
+  ansible.builtin.template:
+    src: modprobe/wireguard.conf.j2
+    dest: "{{ __wireguard_modprobe_config_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  when:
+    - wireguard_enable_kernel_debug_logging | bool
+    - wireguard_kernel_debug_persistent | bool
+
+- name: WireGuard | logging | Check if dynamic debug control interface exists
+  ansible.builtin.stat:
+    path: "{{ __wireguard_dyndbg_control_file }}"
+  register: __wireguard_dyndbg_control_stat
+  when: wireguard_enable_kernel_debug_logging | bool
+
+- name: WireGuard | logging | Check if wireguard kernel module is loaded
+  ansible.builtin.stat:
+    path: "/sys/module/wireguard"
+  register: __wireguard_dyndbg_module_stat
+  when: wireguard_enable_kernel_debug_logging | bool
+
+- name: WireGuard | logging | Check current kernel dynamic debug status for wireguard
+  ansible.builtin.command: "grep '\\[wireguard\\].*=p' {{ __wireguard_dyndbg_control_file }}"
+  register: __wireguard_dyndbg_status
+  failed_when: false
+  changed_when: false
+  when:
+    - wireguard_enable_kernel_debug_logging | bool
+    - __wireguard_dyndbg_control_stat.stat.exists | default(false)
+    - __wireguard_dyndbg_module_stat.stat.exists | default(false)
+
+# Justification: Enable runtime kernel dynamic debug for wireguard module by writing to /proc/dynamic_debug/control.
+# Executed only when control interface exists, wireguard module is loaded, and debug messages are not yet enabled (=p).
+- name: WireGuard | logging | Enable runtime kernel dynamic debug for wireguard module
+  become: true
+  ansible.builtin.shell: "echo 'module wireguard +p' > {{ __wireguard_dyndbg_control_file }}"
+  changed_when: true
+  when:
+    - wireguard_enable_kernel_debug_logging | bool
+    - not ansible_check_mode
+    - __wireguard_dyndbg_control_stat.stat.exists | default(false)
+    - __wireguard_dyndbg_module_stat.stat.exists | default(false)
+    - __wireguard_dyndbg_status.rc | default(1) != 0
+
+- name: WireGuard | logging | Template status snapshot systemd service
+  become: true
+  ansible.builtin.template:
+    src: systemd/wireguard-status.service.j2
+    dest: "/etc/systemd/system/{{ __wireguard_status_unit_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  when: wireguard_enable_status_snapshot | bool
+  notify:
+    - WireGuard | handlers | Reload systemd
+
+- name: WireGuard | logging | Template status snapshot systemd timer
+  become: true
+  ansible.builtin.template:
+    src: systemd/wireguard-status.timer.j2
+    dest: "/etc/systemd/system/{{ __wireguard_status_unit_name }}.timer"
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  when: wireguard_enable_status_snapshot | bool
+  notify:
+    - WireGuard | handlers | Reload systemd
+    - WireGuard | handlers | Restart status timer
+
+- name: WireGuard | logging | Enable and start status snapshot systemd timer
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ __wireguard_status_unit_name }}.timer"
+    state: started
+    enabled: true
+    daemon_reload: true
+  when:
+    - wireguard_enable_status_snapshot | bool
+    - not ansible_check_mode
+
+- name: WireGuard | logging | Template logrotate configuration
+  become: true
+  ansible.builtin.template:
+    src: logrotate/wireguard.j2
+    dest: "/etc/logrotate.d/wireguard"
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+    validate: "logrotate -d %s"
+  when: wireguard_logrotate_options.enabled | bool
+
+- name: WireGuard | logging | Display logging configuration summary
+  ansible.builtin.debug:
+    msg:
+      - "WireGuard dedicated logging configured successfully."
+      - "Log directory: {{ wireguard_log_dir }}"
+      - "Primary log file: {{ wireguard_log_file }}"
+      - "Status snapshot file: {{ wireguard_status_snapshot_file if wireguard_enable_status_snapshot else 'disabled' }}"
+      - "Rsyslog config: /etc/rsyslog.d/{{ wireguard_rsyslog_config_file }}"
+      - "Logrotate config: /etc/logrotate.d/wireguard"
+    verbosity: 1

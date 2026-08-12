@@ -14,6 +14,7 @@ An enterprise-grade, production-ready Ansible role to install and configure [Wir
 - **Automated Full-Mesh VPN Topology**: Automatically establishes direct peer-to-peer WireGuard tunnels between every host pair in the designated mesh group.
 - **Host-Local Cryptographic Key Management**: Private keys are generated directly on target hosts (`wg genkey`) under strict `0700`/`0600` root permissions and never leave the node. All sensitive key tasks enforce `no_log: true`.
 - **Per-Pair Pre-Shared Keys (PSK)**: Generates unique 256-bit pre-shared keys (`wg genpsk`) for each peer host pair for post-quantum security defense-in-depth.
+- **Dedicated Logging & Observability**: Optional rsyslog routing for kernel dynamic debug (`dyndbg`) and `wg-quick` events into `/var/log/wireguard/wireguard.log`, log rotation via `logrotate`, and systemd timer status snapshots into `/var/log/wireguard/wireguard-status.log`.
 - **Zero Downtime Configuration Reloads**: Applies configuration updates seamlessly via `wg syncconf`, preserving active tunnels without dropping state.
 - **Dual-Layer Input Validation**: Combines static argument specification checks (`meta/argument_specs.yml`) with runtime assertion ladders (`tasks/assert.yml`).
 - **State-Driven Lifecycle**: Supports complete service installation (`wireguard_state: present`) and clean uninstallation (`wireguard_state: absent`).
@@ -41,6 +42,17 @@ In a full-mesh topology, every node connects directly to every other node in the
   +-----------------+         +-----------------+
 ```
 
+### Logging & Observability Architecture
+
+When `wireguard_configure_logging: true` is set, kernel dynamic debug options (`options wireguard dyndbg=+p`) and `wg-quick` events are routed into dedicated log files. Note that `journald` receives `kmsg` events independently of rsyslog (so Grafana Alloy -> Loki pipelines remain completely unaffected).
+
+```text
+  [kernel dyndbg] + [wg-quick] ---> [rsyslog] ---> [/var/log/wireguard/wireguard.log]
+                                                ---> [logrotate -> /var/log/archive/wireguard]
+
+  [systemd timer] ------------> [wg show all dump] ---> [/var/log/wireguard/wireguard-status.log]
+```
+
 ### Key Distribution Flow
 
 ```text
@@ -57,19 +69,6 @@ In a full-mesh topology, every node connects directly to every other node in the
  4. Render wg0.conf with peer B public key & PSK       │ 4. Render wg0.conf with peer A public key & PSK
 ```
 
-### Topology Comparison: Full-Mesh vs Hub-and-Spoke
-
-- **Why Full-Mesh?**: Ideal for cluster nodes (e.g. Kubernetes worker/control plane nodes, distributed database nodes, storage clusters) requiring low-latency direct node-to-node communication.
-- **When to prefer Hub-and-Spoke?**: Prefer hub-and-spoke when managing thousands of dynamic ephemeral client devices or road-warrior laptops connecting to central corporate gateways.
-
-### Delivery Method Decision: Native Package (APT)
-
-#### Architecture Rationale
-
-- **Low Overhead & Performance**: WireGuard runs in kernel space (`wireguard.ko`). Installing native APT packages ensures kernel module integration and maximum throughput without container networking overhead.
-- **Systemd Integration**: Uses native `wg-quick@wg0` systemd unit template for system lifecycle management and automated startup.
-- **Security Isolation**: Operates directly under Linux kernel networking boundaries, allowing precise firewall enforcement (`iptables`/`nftables`).
-
 ---
 
 ## 📋 Requirements
@@ -79,7 +78,7 @@ In a full-mesh topology, every node connects directly to every other node in the
 | OS Family | Distribution | Version / Codename | Status |
 | --- | --- | --- | --- |
 | Debian | Ubuntu | 24.04 LTS (Noble Numbat) | Supported |
-| Debian | Ubuntu | 26.04 LTS (Resolute) | Supported |
+| Debian | Ubuntu | 26.04 LTS (Resolving / Resolute) | Supported |
 | Debian | Debian | 12 (Bookworm) | Supported |
 | Debian | Debian | 13 (Trixie) | Supported |
 
@@ -88,6 +87,7 @@ In a full-mesh topology, every node connects directly to every other node in the
 - **Ansible Core**: Version `>= 2.15`
 - **Python**: Version `>= 3.9` on control node and target hosts
 - **Collections**: `ansible.utils`, `ansible.posix`
+- **Kernel Debugging (Optional Logging)**: Requires `CONFIG_DYNAMIC_DEBUG=y` and `CONFIG_DYNAMIC_DEBUG_CORE=y` in target kernel for WireGuard dyndbg debug events (present by default in official Ubuntu/Debian kernels).
 - **Privileges**: Root privilege escalation (`become: true`) on target hosts
 - **Playbook Scope**: Playbooks executing this role **must target the entire mesh group** simultaneously (e.g., `hosts: wireguard`) so Ansible can gather facts and public keys across all nodes in the mesh.
 
@@ -138,10 +138,6 @@ ansible-playbook -i hosts.yml site.yml
 
 ## ⚙️ Configuration
 
-### Default Configuration
-
-By default, the role creates interface `wg0` listening on UDP port `51820`, generates 256-bit host keypairs and per-pair PSKs, and renders `/etc/wireguard/wg0.conf`.
-
 ### Rendered `/etc/wireguard/wg0.conf` Example
 
 ```ini
@@ -179,6 +175,7 @@ AllowedIPs = 10.8.0.13/32
 | `wireguard_state` | Target state for WireGuard installation (`present` or `absent`) | `'present'` |
 | `wireguard_remove_packages` | Uninstall WireGuard packages when `wireguard_state` is `absent` | `true` |
 | `wireguard_purge_keys` | Purge key directory and main config directory on removal | `false` |
+| `wireguard_purge_logs` | Purge log directory and archive directory when `wireguard_state` is `absent` | `false` |
 
 ### General & Network Settings
 
@@ -200,6 +197,26 @@ AllowedIPs = 10.8.0.13/32
 | --- | --- | --- |
 | `wireguard_use_preshared_keys` | Generate unique per-peer-pair pre-shared keys (PSK) | `true` |
 | `wireguard_regenerate_keys` | Force regeneration of target host private/public keys and PSKs | `false` |
+
+### Logging & Observability Settings
+
+| Variable | Description | Default |
+| --- | --- | --- |
+| `wireguard_configure_logging` | Master toggle to enable dedicated WireGuard logging | `false` |
+| `wireguard_install_rsyslog` | Auto-install rsyslog and logrotate APT packages if missing | `true` |
+| `wireguard_log_dir` | Base directory for WireGuard dedicated log files | `"/var/log/wireguard"` |
+| `wireguard_log_file` | Primary log file path for kernel dyndbg and wg-quick messages | `"{{ wireguard_log_dir }}/wireguard.log"` |
+| `wireguard_log_dir_permissions` | Directory octal permissions for `wireguard_log_dir` | `"0750"` |
+| `wireguard_log_file_permissions` | File octal permissions for WireGuard log files | `"0640"` |
+| `wireguard_log_user` | User owner for WireGuard log directory and files | `"root"` |
+| `wireguard_log_group` | Group owner for WireGuard log directory and files | `"adm"` |
+| `wireguard_rsyslog_config_file` | Filename for rsyslog fragment under `/etc/rsyslog.d/` | `"49-wireguard.conf"` |
+| `wireguard_enable_kernel_debug_logging` | Enable kernel dynamic debug (`dyndbg`) for wireguard module | `true` |
+| `wireguard_kernel_debug_persistent` | Persist kernel dyndbg options via `/etc/modprobe.d/wireguard.conf` | `true` |
+| `wireguard_enable_status_snapshot` | Enable periodic WireGuard status snapshot service and timer | `true` |
+| `wireguard_status_snapshot_file` | Output log file path for periodic systemd status snapshots | `"{{ wireguard_log_dir }}/wireguard-status.log"` |
+| `wireguard_status_snapshot_interval` | Systemd timer execution interval for status snapshots | `"5min"` |
+| `wireguard_logrotate_options` | Dictionary specifying log rotation frequency, retention count, and archive dir | *(see `defaults/main.yml`)* |
 
 ---
 
@@ -231,16 +248,29 @@ Execute the following verification commands on any mesh node after deployment:
 sudo wg show
 ```
 
-### 2. Verify Systemd Service State
+### 2. Tail Dedicated WireGuard Event Logs
 
 ```bash
-sudo systemctl status wg-quick@wg0
+sudo tail -f /var/log/wireguard/wireguard.log
 ```
 
-### 3. Verify End-to-End Tunnel Connectivity
+### 3. Verify Logrotate Configuration
 
 ```bash
-ping -c 3 10.8.0.12
+sudo logrotate -d /etc/logrotate.d/wireguard
+```
+
+### 4. Check Status Snapshot Timer & Log File
+
+```bash
+sudo systemctl status wireguard-status.timer
+sudo tail -n 20 /var/log/wireguard/wireguard-status.log
+```
+
+### 5. Inspect Kernel Dynamic Debug Flags
+
+```bash
+sudo grep wireguard /proc/dynamic_debug/control
 ```
 
 ---
@@ -250,38 +280,39 @@ ping -c 3 10.8.0.12
 - **Host-Local Private Keys**: Generated on target hosts using `wg genkey` with strict `0700`/`0600` permissions. Private keys never leave the node.
 - **Sensitive Parameter Masking**: All tasks reading or processing key material enforce `no_log: true` to prevent secrets leakage in CI/CD logs.
 - **Per-Pair Pre-Shared Keys**: Generates unique PSKs per peer host pair (`wg genpsk`), adding post-quantum symmetric encryption defense-in-depth.
-- **Strict AllowedIPs Boundaries**: Restricts peer `AllowedIPs` strictly to that peer's `/32` address, preventing unwanted routing or traffic spoofing.
-- **Disabled Forwarding by Default**: `wireguard_enable_forwarding` defaults to `false`, preventing nodes from acting as unintentional transit routers.
-- **Post-Render Validation**: Validates rendered configurations with `wg-quick strip` prior to handler execution.
-- **Firewall Requirements**: Ensure UDP port `51820` (or `wireguard_port`) is open on ingress firewalls (e.g. `ufw allow 51820/udp` or `nftables`/`iptables`).
+- **Kernel Debug Privacy**: Dynamic debug (`dyndbg`) logs peer endpoints, handshakes, and public keys to system logs for debugging, but **NEVER logs host private keys**.
+- **Restricted Log File Permissions**: Dedicated log files and directories are created with `0750`/`0640` permissions owned by `root:adm`.
+- **Clean Artifact Purging**: When `wireguard_state: absent` and `wireguard_purge_logs: true`, all log files and archive directories are safely purged.
 
 ---
 
 ## Uninstall & Roll-back
 
-To cleanly uninstall WireGuard and remove configuration files from target nodes, execute with `wireguard_state: absent`:
+To cleanly uninstall WireGuard, remove configuration files, and purge log artifacts from target nodes:
 
 ```yaml
 ---
-- name: Uninstall WireGuard
+- name: Uninstall WireGuard and Purge Logs
   hosts: wireguard
   become: true
   vars:
     wireguard_state: "absent"
     wireguard_remove_packages: true
     wireguard_purge_keys: true
+    wireguard_purge_logs: true
   roles:
     - role: grzegorzfranus.wireguard
 ```
 
 ---
 
-## 🧪 Check mode behavior
+## 🧪 Check Mode Behavior
 
 When executed with `--check` mode:
 - Static assertions and specification validations run normally.
 - Template rendering dry-runs display proposed file diffs.
 - Key generation, service state mutations, and package installations are safely skipped.
+- Runtime dynamic debug initialization (`echo 'module wireguard +p' > /proc/dynamic_debug/control`) is safely skipped.
 
 ---
 
@@ -292,33 +323,16 @@ When executed with `--check` mode:
 #### Interface fails to start (Kernel module missing)
 
 ```bash
-# Check if kernel module is loaded
 lsmod | grep wireguard
-
-# Attempt manual module load
 sudo modprobe wireguard
 ```
 
-#### No connectivity between peers
+#### Log file `/var/log/wireguard/wireguard.log` is empty
 
-```bash
-# Inspect handshakes and endpoint status
-sudo wg show
-
-# Verify UDP port listening status
-sudo ss -tuln | grep 51820
-
-# Monitor systemd journal logs
-sudo journalctl -u wg-quick@wg0 -f
-```
-
-#### MTU and Packet Fragmentation
-
-For nodes behind PPPoE or cloud provider networks with lower MTU, set `wireguard_mtu: 1420` in `host_vars` or `group_vars`.
-
-#### NAT / Firewall Timeout Issues
-
-For nodes behind NAT gateways or stateful firewalls, set `wireguard_persistent_keepalive: 25` in `host_vars`.
+- **Check Kernel Config**: Ensure target kernel was compiled with `CONFIG_DYNAMIC_DEBUG=y` (`zgrep DYNAMIC_DEBUG /proc/config.gz` or `/boot/config-*`).
+- **Check Modprobe Options**: Confirm modprobe options are present (`cat /etc/modprobe.d/wireguard.conf`).
+- **Check Dynamic Debug Control**: Verify `=p` is set for wireguard in `/proc/dynamic_debug/control` (`grep wireguard /proc/dynamic_debug/control`).
+- **Check Rsyslog Status**: Confirm rsyslog service is running and active (`systemctl status rsyslog`).
 
 ---
 
@@ -326,18 +340,6 @@ For nodes behind NAT gateways or stateful firewalls, set `wireguard_persistent_k
 
 ```text
 ansible-role-wireguard/
-├── .github/
-│   ├── ISSUE_TEMPLATE/          # Issue report templates (bug, feature, task)
-│   │   ├── bug_report.yml
-│   │   ├── config.yml
-│   │   ├── feature_request.yml
-│   │   └── task.yml
-│   ├── PULL_REQUEST_TEMPLATE/    # Pull request description template
-│   │   └── pull_request_template.md
-│   ├── workflows/               # Centralized GitHub Actions CI/CD workflows
-│   │   ├── ci.yml
-│   │   └── release.yml
-│   └── dependabot.yml           # Dependabot configuration for GitHub Actions
 ├── defaults/
 │   └── main.yml                 # Default configuration variables
 ├── handlers/
@@ -346,7 +348,12 @@ ansible-role-wireguard/
 │   ├── main.yml                 # Role metadata and Galaxy specifications
 │   └── argument_specs.yml       # Native argument specification validation
 ├── molecule/                    # Molecule testing framework
-│   └── default/                 # Default testing scenario
+│   ├── default/                 # Default testing scenario
+│   │   ├── converge.yml
+│   │   ├── molecule.yml
+│   │   ├── prepare.yml
+│   │   └── verify.yml
+│   └── logging/                 # Dedicated logging testing scenario
 │       ├── converge.yml
 │       ├── molecule.yml
 │       ├── prepare.yml
@@ -361,11 +368,23 @@ ansible-role-wireguard/
 │   ├── keys.yml                 # Host keypair & per-pair PSK management
 │   ├── mesh_facts.yml           # Full-mesh topology discovery & key exchange
 │   ├── configure.yml            # WireGuard configuration deployment
+│   ├── logging.yml              # Dedicated logging orchestration
+│   ├── logging_debian.yml       # APT logging prerequisites (rsyslog, logrotate)
 │   ├── service.yml              # Service state management
 │   ├── remove.yml               # Removal dispatcher
 │   └── remove_debian.yml        # APT package removal (Debian/Ubuntu)
 ├── templates/
-│   └── wg.conf.j2               # Main WireGuard interface configuration template
+│   ├── logrotate/
+│   │   └── wireguard.j2         # Logrotate configuration template
+│   ├── modprobe/
+│   │   └── wireguard.conf.j2    # Modprobe dyndbg configuration template
+│   ├── rsyslog/
+│   │   └── wireguard.conf.j2    # Rsyslog rules configuration template
+│   ├── systemd/
+│   │   ├── wireguard-status.service.j2 # Systemd status snapshot service template
+│   │   └── wireguard-status.timer.j2   # Systemd status snapshot timer template
+│   └── wireguard/
+│       └── wg.conf.j2           # Main WireGuard interface configuration template
 └── vars/
     ├── main.yml                 # Internal constants
     └── debian.yml               # Debian/Ubuntu OS package definitions
@@ -375,61 +394,74 @@ ansible-role-wireguard/
 
 ## 🏷️ Tags
 
+Use `--tags` to run selective parts of the role.
+
 | Tag | Description |
-| --- | --- |
+|-----|-------------|
 | `wireguard_assert` | Run variable assertion ladder |
 | `wireguard_prerequisites` | Install system update prerequisites |
 | `wireguard_install` | Install WireGuard package binaries |
 | `wireguard_keys` | Manage host cryptographic keys and peer PSKs |
 | `wireguard_mesh` | Discover mesh topology and peer endpoints |
 | `wireguard_configure` | Render interface configuration files |
+| `logging` | Configure rsyslog routing, kernel dyndbg, logrotate, and status timer |
 | `wireguard_service` | Manage systemd service state |
-| `wireguard_remove` | Uninstall WireGuard configuration and packages |
-
----
+| `wireguard_remove` | Uninstall WireGuard configuration, logs, and packages |
 
 ## CI/CD Pipeline
 
-- **Continuous Integration (`ci.yml`)**: Runs on every pull request targeting `main`. Executes branch name linting, PR title Conventional Commit verification, `yamllint`, `ansible-lint`, `actionlint`, and Molecule test matrix (`ubuntu2404`, `ubuntu2604`, `debian12`, `debian13`).
-- **Release & Publishing (`release.yml`)**: Automates version bumping, changelog generation via Release Please, and publishes tagged releases to Ansible Galaxy upon merging to `main`.
+This repository uses centralized, reusable GitHub Actions workflows from [github-workflows](https://github.com/grzegorzfranus/github-workflows) (`v3.1.2`) for quality assurance, security scanning, and release automation.
 
----
+### CI Pipeline (`ansible-ci.yml`)
+
+Runs on every Pull Request in a two-tier gate pattern:
+
+1. **Branch Name Lint** — enforces naming conventions (`feature/`, `bugfix/`, `fix/`, `hotfix/`, `release/`, `chore/`, `docs/`, `refactor/`, `test/`, `build/`, `ci/`, `perf/`, `revert/`)
+2. **PR Title Lint** — enforces [Conventional Commits](https://www.conventionalcommits.org/) format (`feat:`, `fix:`, `ci:`, etc.)
+3. **YAML Syntax Lint** — validates YAML formatting via `yamllint`
+4. **Ansible Lint** — checks Ansible best practices and role standards
+5. **Galaxy Metadata Validation** — verifies `meta/main.yml` schema and requirements (`ansible-meta-validate.yml`)
+6. **Security Scanning** — TruffleHog secret detection and Trivy IaC scanning (`ansible-security.yml`)
+7. **Molecule Integration Tests** — executes Molecule test matrix across supported distros (`ansible-molecule.yml`)
+8. **Merge Check Gate** — single authoritative status check aggregating all results for branch protection
+
+### Release & Publish Pipeline (`ansible-publish.yml`)
+
+Automated via [Release Please](https://github.com/googleapis/release-please):
+
+1. **Push to `main`** → Release Please creates or updates a Release PR with automated changelog generation
+2. **Release PR Validation** → validates YAML syntax and actions schema before setting `Merge Check` status
+3. **Merge Release PR** → creates Git version tag and GitHub Release automatically
+4. **Ansible Galaxy Publish** → publishes tagged release to Ansible Galaxy via `ansible-publish.yml`
 
 ## Example Playbooks
 
-### Production Mesh Playbook with NATed Node
+### Dedicated Logging Enabled Playbook
 
 ```yaml
 ---
-- name: Deploy Production WireGuard Full-Mesh VPN
+- name: Deploy WireGuard Full-Mesh VPN with Dedicated Logging
   hosts: wireguard
   become: true
   vars:
     wireguard_mesh_group: "wireguard"
-    wireguard_port: 51820
-    wireguard_use_preshared_keys: true
-    wireguard_enable_forwarding: false
+    wireguard_configure_logging: true
+    wireguard_install_rsyslog: true
+    wireguard_enable_kernel_debug_logging: true
+    wireguard_enable_status_snapshot: true
+    wireguard_status_snapshot_interval: "5min"
+    wireguard_logrotate_options:
+      enabled: true
+      frequency: "daily"
+      rotate_count: 30
+      compress: true
+      notifempty: true
+      copytruncate: true
+      dateext: true
+      dateformat: "-%Y%m%d"
+      olddir: "/var/log/archive/wireguard"
   roles:
     - role: grzegorzfranus.wireguard
-```
-
-#### Inventory File (`inventories/production/hosts.yml`)
-
-```yaml
-all:
-  children:
-    wireguard:
-      hosts:
-        dc-node-1.example.com:
-          ansible_host: 198.51.100.10
-          wireguard_address: 10.8.0.1/24
-        dc-node-2.example.com:
-          ansible_host: 198.51.100.20
-          wireguard_address: 10.8.0.2/24
-        branch-nat-1.example.com:
-          ansible_host: 203.0.113.50
-          wireguard_address: 10.8.0.10/24
-          wireguard_persistent_keepalive: 25
 ```
 
 ## 🤝 Contributing
