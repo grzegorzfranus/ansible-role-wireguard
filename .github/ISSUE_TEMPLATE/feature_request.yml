@@ -1,0 +1,24 @@
+---
+name: "✨ Feature Request"
+description: "Suggest a new feature or enhancement for the WireGuard Ansible role"
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: feature_summary
+    attributes:
+      label: "Feature Summary"
+      description: "Explain the feature you would like to see added."
+    validations:
+      required: true
+  - type: textarea
+    id: use_case
+    attributes:
+      label: "Use Case / Rationale"
+      description: "Why is this feature useful? What problem does it solve?"
+    validations:
+      required: true
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: "Proposed Solution / Implementation Details"
+      description: "Any ideas on how this should be implemented or configured."

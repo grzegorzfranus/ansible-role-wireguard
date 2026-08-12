@@ -1,0 +1,88 @@
+# =============================================================================
+# Ansible Role: WireGuard - Default Variables
+# =============================================================================
+# This file defines default configuration values for the WireGuard role.
+# These values can be overridden by setting them in your playbook or inventory.
+#
+# Supported OS distributions:
+# - Ubuntu 26.04 (Resolute) and variants
+# - Ubuntu 24.04 (Noble) and variants
+# - Debian 13 (Trixie) and variants
+# - Debian 12 (Bookworm) and variants
+#
+# Sections:
+#   1. Lifecycle Settings
+#   2. Network & Interface Settings
+#   3. Key Management & Security Settings
+# =============================================================================
+---
+# -----------------------------------------------------------------------------
+# 1. Lifecycle Settings
+# -----------------------------------------------------------------------------
+# Controls installation and operational state of WireGuard on target hosts
+
+# Target lifecycle state for the WireGuard service and configuration
+# Valid values: present, absent
+wireguard_state: "present"
+
+# Uninstall WireGuard APT packages when wireguard_state is absent
+# Valid values: true, false
+wireguard_remove_packages: true
+
+# -----------------------------------------------------------------------------
+# 2. Network & Interface Settings
+# -----------------------------------------------------------------------------
+# Defines network address spaces, interface names, endpoints, and topology
+
+# Inventory group whose member hosts form the full-mesh VPN topology
+# Valid values: inventory group name string (e.g. "wireguard")
+wireguard_mesh_group: "wireguard"
+
+# Name of the WireGuard interface
+# Valid values: valid network interface string (e.g. "wg0")
+wireguard_interface: "wg0"
+
+# UDP port for WireGuard service listener
+# Valid values: integer between 1 and 65535 (default: 51820)
+wireguard_port: 51820
+
+# WireGuard mesh network CIDR subnet
+# Valid values: IPv4 CIDR string (e.g. "10.8.0.0/24" or RFC 5737 "198.51.100.0/24")
+wireguard_network: "10.8.0.0/24"
+
+# Per-host tunnel IP address with prefix length (must be defined per host in host_vars)
+# Valid values: host IPv4 CIDR string inside wireguard_network (e.g. "10.8.0.11/24")
+wireguard_address: ""
+
+# Endpoint address or FQDN used by peers to initiate tunnel connections
+# Valid values: IP address or FQDN string (defaults to ansible_host)
+wireguard_endpoint: "{{ ansible_host | default(inventory_hostname) }}"
+
+# Optional Maximum Transmission Unit (MTU) for the WireGuard interface (omit for default)
+# Valid values: integer between 1280 and 1500, or null
+wireguard_mtu: null
+
+# Persistent keepalive interval in seconds for NAT traversal (0 disables keepalive)
+# Valid values: integer >= 0 (recommended 25 for NATed nodes)
+wireguard_persistent_keepalive: 0
+
+# Enable kernel-level IPv4 packet forwarding via sysctl
+# Valid values: true, false
+wireguard_enable_forwarding: false
+
+# -----------------------------------------------------------------------------
+# 3. Key Management & Security Settings
+# -----------------------------------------------------------------------------
+# Governs cryptographic key generation, pre-shared keys, and key cleanup
+
+# Enable unique per-peer-pair pre-shared key (PSK) generation and exchange
+# Valid values: true, false
+wireguard_use_preshared_keys: true
+
+# Force regeneration of private/public keys on target hosts during execution
+# Valid values: true, false
+wireguard_regenerate_keys: false
+
+# Purge private keys, public keys, and PSKs when wireguard_state is absent
+# Valid values: true, false
+wireguard_purge_keys: false

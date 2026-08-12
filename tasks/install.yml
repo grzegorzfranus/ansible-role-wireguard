@@ -1,0 +1,9 @@
+# =============================================================================
+# Ansible Role: WireGuard - Tasks: Install
+# =============================================================================
+# Dispatcher routing WireGuard package installation to OS family specific files.
+# =============================================================================
+---
+- name: WireGuard | install | Install WireGuard packages (Debian)
+  ansible.builtin.include_tasks: install_debian.yml
+  when: ansible_facts['os_family'] == 'Debian'

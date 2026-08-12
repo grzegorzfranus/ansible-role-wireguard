@@ -1,0 +1,44 @@
+---
+name: "🐛 Bug Report"
+description: "Report a bug or unexpected behavior in the WireGuard Ansible role"
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: "Thank you for taking the time to report an issue!"
+  - type: input
+    id: os_version
+    attributes:
+      label: "Operating System and Version"
+      description: "Target OS (e.g., Ubuntu 24.04 Noble, Debian 12 Bookworm)"
+      placeholder: "Ubuntu 24.04"
+    validations:
+      required: true
+  - type: input
+    id: ansible_version
+    attributes:
+      label: "Ansible Version"
+      description: "Output of `ansible --version`"
+      placeholder: "core 2.16.0"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: "Bug Description"
+      description: "A clear and concise description of what the bug is."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: "Expected Behavior"
+      description: "What you expected to happen."
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: "Relevant Logs / Output"
+      description: "Paste relevant output from `ansible-playbook -vvv` or system log."
+      render: shell

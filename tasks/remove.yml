@@ -1,0 +1,42 @@
+# =============================================================================
+# Ansible Role: WireGuard - Tasks: Remove
+# =============================================================================
+# Stops and disables service, removes configuration, and optionally purges keys.
+# =============================================================================
+---
+- name: WireGuard | remove | Stop and disable WireGuard service
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ __wireguard_service_name }}"
+    state: stopped
+    enabled: false
+  failed_when: false
+  when:
+    - not ansible_check_mode
+
+- name: WireGuard | remove | Remove WireGuard interface configuration
+  become: true
+  ansible.builtin.file:
+    path: "{{ __wireguard_config_file }}"
+    state: absent
+
+- name: WireGuard | remove | Purge cryptographic key directory if requested
+  become: true
+  ansible.builtin.file:
+    path: "{{ __wireguard_keys_dir }}"
+    state: absent
+  when: wireguard_purge_keys | bool
+  no_log: true
+
+- name: WireGuard | remove | Purge main WireGuard configuration directory if requested
+  become: true
+  ansible.builtin.file:
+    path: "{{ __wireguard_config_dir }}"
+    state: absent
+  when: wireguard_purge_keys | bool
+
+- name: WireGuard | remove | Remove APT packages (Debian)
+  ansible.builtin.include_tasks: remove_debian.yml
+  when:
+    - ansible_facts['os_family'] == 'Debian'
+    - wireguard_remove_packages | bool

@@ -1,0 +1,61 @@
+# =============================================================================
+# Ansible Role: WireGuard - Tasks: Main Orchestrator
+# =============================================================================
+# Main task entrypoint routing execution phases based on wireguard_state.
+# Flow: include_vars -> assert -> prerequisites -> install -> keys -> mesh_facts -> configure -> service -> remove
+# =============================================================================
+---
+- name: WireGuard | main | Gather OS specific variables
+  ansible.builtin.include_vars: "{{ lookup('first_found', params) }}"
+  vars:
+    params:
+      files:
+        - "{{ ansible_facts['distribution'] | lower }}_{{ ansible_facts['distribution_version'] | lower }}.yml"
+        - "{{ ansible_facts['distribution'] | lower }}_{{ ansible_facts['distribution_major_version'] | lower }}.yml"
+        - "{{ ansible_facts['distribution'] | lower }}.yml"
+        - "{{ ansible_facts['os_family'] | lower }}_{{ ansible_facts['distribution_version'] | lower }}.yml"
+        - "{{ ansible_facts['os_family'] | lower }}_{{ ansible_facts['distribution_major_version'].split('.')[0] }}.yml"
+        - "{{ ansible_facts['os_family'] | lower }}.yml"
+        - "main.yml"
+      paths:
+        - "{{ role_path }}/vars"
+  tags: [always]
+
+- name: WireGuard | main | Validate input variables
+  ansible.builtin.import_tasks: assert.yml
+  tags: [always, assert]
+
+- name: WireGuard | main | Install prerequisites
+  ansible.builtin.import_tasks: prerequisites.yml
+  when: wireguard_state | lower != 'absent'
+  tags: [prerequisites, install]
+
+- name: WireGuard | main | Install WireGuard packages
+  ansible.builtin.import_tasks: install.yml
+  when: wireguard_state | lower != 'absent'
+  tags: [install]
+
+- name: WireGuard | main | Manage cryptographic keys
+  ansible.builtin.import_tasks: keys.yml
+  when: wireguard_state | lower != 'absent'
+  tags: [keys, security]
+
+- name: WireGuard | main | Build mesh network facts
+  ansible.builtin.import_tasks: mesh_facts.yml
+  when: wireguard_state | lower != 'absent'
+  tags: [mesh, configure]
+
+- name: WireGuard | main | Configure WireGuard interface
+  ansible.builtin.import_tasks: configure.yml
+  when: wireguard_state | lower != 'absent'
+  tags: [configure]
+
+- name: WireGuard | main | Manage WireGuard service state
+  ansible.builtin.import_tasks: service.yml
+  when: wireguard_state | lower != 'absent'
+  tags: [service]
+
+- name: WireGuard | main | Remove WireGuard service and configuration
+  ansible.builtin.import_tasks: remove.yml
+  when: wireguard_state | lower == 'absent'
+  tags: [remove, uninstall]

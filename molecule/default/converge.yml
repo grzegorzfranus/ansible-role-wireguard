@@ -1,0 +1,28 @@
+---
+- name: Converge
+  hosts: instance
+  become: true
+  vars:
+    wireguard_mesh_group: "wireguard"
+    wireguard_address: "10.8.0.11/24"
+    wireguard_endpoint: "192.0.2.11"
+    wireguard_use_preshared_keys: true
+  pre_tasks:
+    - name: Ensure current host is added to wireguard group
+      ansible.builtin.group_by:
+        key: "wireguard"
+      changed_when: false
+
+    - name: Add mock secondary peer to inventory group for mesh simulation
+      ansible.builtin.add_host:
+        name: "node2.example.com"
+        groups: "wireguard"
+        ansible_host: "192.0.2.12"
+        wireguard_address: "10.8.0.12/24"
+        wireguard_endpoint: "192.0.2.12"
+        __wireguard_public_key: "pOCSkrZRwni5dyxWn1+puxPZBrRqtoyd+dwrRAn4ogk="
+      changed_when: false
+  tasks:
+    - name: Converge | Include WireGuard role
+      ansible.builtin.include_role:
+        name: "{{ playbook_dir }}/../.."

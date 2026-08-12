@@ -1,0 +1,42 @@
+# =============================================================================
+# Ansible Role: WireGuard - Tasks: Configure
+# =============================================================================
+# Renders the WireGuard interface configuration file and manages sysctl settings.
+# =============================================================================
+---
+- name: WireGuard | configure | Enable IPv4 packet forwarding
+  become: true
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: "1"
+    sysctl_set: true
+    state: present
+    reload: true
+  when: wireguard_enable_forwarding | bool
+
+- name: WireGuard | configure | Template WireGuard interface configuration
+  become: true
+  ansible.builtin.template:
+    src: wg.conf.j2
+    dest: "{{ __wireguard_config_file }}"
+    owner: root
+    group: root
+    mode: "0600"
+    backup: true
+  no_log: true
+  notify:
+    - WireGuard | handlers | Reload WireGuard configuration
+
+# Justification: Use shell module with process substitution to validate the rendered
+# WireGuard configuration file using wg-quick strip. Fails the play fast if syntax
+# is invalid before handlers flush.
+- name: WireGuard | configure | Validate rendered interface configuration
+  become: true
+  ansible.builtin.shell: >-
+    set -o pipefail &&
+    wg-quick strip {{ wireguard_interface }} > /dev/null
+  args:
+    executable: /bin/bash
+  changed_when: false
+  no_log: true
+  when: not ansible_check_mode

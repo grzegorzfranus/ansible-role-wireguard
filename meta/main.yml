@@ -1,0 +1,29 @@
+# =============================================================================
+# Ansible Role: WireGuard - Galaxy Metadata
+# =============================================================================
+---
+galaxy_info:
+  role_name: wireguard
+  namespace: grzegorzfranus
+  author: Grzegorz Franus
+  description: Ansible role for installing and configuring WireGuard in a full-mesh VPN topology
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - noble
+        - resolute
+    - name: Debian
+      versions:
+        - bookworm
+        - trixie
+  galaxy_tags:
+    - networking
+    - wireguard
+    - vpn
+    - mesh
+    - security
+collections:
+  - ansible.posix
+dependencies: []

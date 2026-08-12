@@ -1,0 +1,47 @@
+# =============================================================================
+# Ansible Role: WireGuard - Tasks: Mesh Facts Discovery
+# =============================================================================
+# Discovers mesh peers, validates address uniqueness, and shares public keys.
+# =============================================================================
+---
+- name: WireGuard | mesh_facts | Collect all mesh addresses
+  ansible.builtin.set_fact:
+    __wireguard_all_mesh_addresses: >-
+      {%- set addresses = [] -%}
+      {%- for host in (groups[wireguard_mesh_group] | default([inventory_hostname])) -%}
+        {%- if hostvars[host] is defined and hostvars[host]['wireguard_address'] is defined -%}
+          {%- set _ = addresses.append(hostvars[host]['wireguard_address']) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ addresses }}
+
+- name: WireGuard | mesh_facts | Assert unique wireguard_address across mesh nodes
+  ansible.builtin.assert:
+    that:
+      - __wireguard_all_mesh_addresses | length == __wireguard_all_mesh_addresses | unique | length
+    fail_msg: "Duplicate wireguard_address detected in mesh group '{{ wireguard_mesh_group }}'"
+    success_msg: "All wireguard_address values across mesh group are unique."
+
+- name: WireGuard | mesh_facts | Build mesh peer list for inventory host
+  ansible.builtin.set_fact:
+    __wireguard_mesh_peers: >-
+      {%- set peers = [] -%}
+      {%- for host in (groups[wireguard_mesh_group] | default([])) -%}
+        {%- if host != inventory_hostname -%}
+          {%- set _ = peers.append(host) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ peers }}
+
+- name: WireGuard | mesh_facts | Assert public key defined for every mesh peer
+  ansible.builtin.assert:
+    that:
+      - hostvars[item] is defined
+      - hostvars[item]['__wireguard_public_key'] is defined
+      - hostvars[item]['__wireguard_public_key'] is string
+      - hostvars[item]['__wireguard_public_key'] | length > 0
+    fail_msg: >-
+      Mesh peer '{{ item }}' is missing public key '__wireguard_public_key'.
+      Ensure all mesh hosts are included in the play execution.
+    success_msg: "Public key verified for peer '{{ item }}'"
+  loop: "{{ __wireguard_mesh_peers | default([]) }}"

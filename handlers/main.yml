@@ -1,0 +1,85 @@
+# =============================================================================
+# Ansible Role: WireGuard - Handlers
+# =============================================================================
+# Handlers triggered by configuration changes and service lifecycle events.
+# Execution order follows definition order when listening on the same topic.
+# =============================================================================
+---
+# -----------------------------------------------------------------------------
+# Reload Topic: "WireGuard | handlers | Reload WireGuard configuration"
+# -----------------------------------------------------------------------------
+
+- name: WireGuard | handlers | Check if WireGuard interface exists for reload
+  listen: "WireGuard | handlers | Reload WireGuard configuration"
+  become: true
+  ansible.builtin.command: "ip link show {{ wireguard_interface }}"
+  register: __wireguard_interface_check
+  failed_when: false
+  changed_when: false
+  when:
+    - wireguard_state | lower != 'absent'
+    - not ansible_check_mode
+
+# Justification: Use shell module with process substitution <(wg-quick strip ...)
+# to apply configuration updates dynamically via 'wg syncconf' without dropping active tunnels.
+- name: WireGuard | handlers | Reload WireGuard configuration
+  listen: "WireGuard | handlers | Reload WireGuard configuration"
+  become: true
+  ansible.builtin.shell: >-
+    set -o pipefail &&
+    wg syncconf {{ wireguard_interface }} <(wg-quick strip {{ wireguard_interface }})
+  args:
+    executable: /bin/bash
+  changed_when: true
+  when:
+    - wireguard_state | lower != 'absent'
+    - not ansible_check_mode
+    - __wireguard_interface_check.rc | default(1) == 0
+
+- name: WireGuard | handlers | Check if WireGuard kernel module is loadable for reload fallback
+  listen: "WireGuard | handlers | Reload WireGuard configuration"
+  ansible.builtin.command: "modprobe -n wireguard"
+  register: __wireguard_module_check_reload_fallback
+  failed_when: false
+  changed_when: false
+  when:
+    - wireguard_state | lower != 'absent'
+    - not ansible_check_mode
+    - __wireguard_interface_check.rc | default(1) != 0
+
+- name: WireGuard | handlers | Fallback service restart on configuration change
+  listen: "WireGuard | handlers | Reload WireGuard configuration"
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ __wireguard_service_name }}"
+    state: restarted
+  when:
+    - wireguard_state | lower != 'absent'
+    - not ansible_check_mode
+    - __wireguard_interface_check.rc | default(1) != 0
+    - __wireguard_module_check_reload_fallback.rc | default(1) == 0
+
+# -----------------------------------------------------------------------------
+# Restart Topic: "WireGuard | handlers | Restart WireGuard service"
+# -----------------------------------------------------------------------------
+
+- name: WireGuard | handlers | Check if WireGuard kernel module is loadable for restart
+  listen: "WireGuard | handlers | Restart WireGuard service"
+  ansible.builtin.command: "modprobe -n wireguard"
+  register: __wireguard_module_check_handler
+  failed_when: false
+  changed_when: false
+  when:
+    - wireguard_state | lower != 'absent'
+    - not ansible_check_mode
+
+- name: WireGuard | handlers | Restart WireGuard service
+  listen: "WireGuard | handlers | Restart WireGuard service"
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ __wireguard_service_name }}"
+    state: restarted
+  when:
+    - wireguard_state | lower != 'absent'
+    - not ansible_check_mode
+    - __wireguard_module_check_handler.rc | default(1) == 0

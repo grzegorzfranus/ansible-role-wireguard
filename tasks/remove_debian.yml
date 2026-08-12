@@ -1,0 +1,12 @@
+# =============================================================================
+# Ansible Role: WireGuard - Tasks: Remove (Debian)
+# =============================================================================
+# Removes WireGuard APT packages on Debian/Ubuntu systems during purge.
+# =============================================================================
+---
+- name: WireGuard | remove | Uninstall WireGuard APT packages (Debian)
+  become: true
+  ansible.builtin.apt:
+    name: "{{ __wireguard_packages }}"
+    state: absent
+    purge: true
