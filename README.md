@@ -2,7 +2,7 @@
 
 | Source | Version | CI | License |
 | --- | --- | --- | --- |
-| [![Source Code](https://img.shields.io/badge/source-github-blue.svg)](https://github.com/grzegorzfranus/ansible-role-wireguard) | [![Version](https://img.shields.io/github/v/release/grzegorzfranus/ansible-role-wireguard)](https://github.com/grzegorzfranus/ansible-role-wireguard/releases) | [![CI](https://github.com/grzegorzfranus/ansible-role-wireguard/actions/workflows/ci.yml/badge.svg)](https://github.com/grzegorzfranus/ansible-role-wireguard/actions/workflows/ci.yml) | [![License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE) |
+| [![Source Code](https://img.shields.io/badge/source-github-blue.svg)](https://github.com/grzegorzfranus/ansible-role-wireguard) | [![Version](https://img.shields.io/github/v/release/grzegorzfranus/ansible-role-wireguard)](https://github.com/grzegorzfranus/ansible-role-wireguard/releases) | [![CI](https://github.com/grzegorzfranus/ansible-role-wireguard/actions/workflows/ci.yml/badge.svg)](https://github.com/grzegorzfranus/ansible-role-wireguard/actions/workflows/ci.yml) | [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE) |
 
 An enterprise-grade, production-ready Ansible role to install and configure [WireGuard](https://www.wireguard.com/) on Ubuntu and Debian distributions via native APT packages. This role automates the build of a full-mesh Virtual Private Network (VPN) topology across all hosts of an inventory group, ensuring encrypted point-to-point communication between every pair of nodes with host-isolated private keys and unique per-peer-pair pre-shared keys (PSK).
 
@@ -428,21 +428,33 @@ all:
           wireguard_persistent_keepalive: 25
 ```
 
----
-
 ## 🤝 Contributing
 
-Contributions are welcome! Please adhere to Conventional Commit guidelines (`feat:`, `fix:`, `docs:`, `ci:`) and create feature branches matching `feature/<description>` before opening a pull request.
+Contributions, bug reports, and feature requests are welcome!
 
----
+- Fork the repository and create your branch from `main`
+- Use [Conventional Commits](https://www.conventionalcommits.org/) for commit messages:
+  - `feat:` — new features
+  - `fix:` — bug fixes
+  - `refactor:` — code refactoring
+  - `docs:` — documentation changes
+  - `ci:` — CI/CD pipeline updates
+  - `build:` — dependency and build configuration updates
+  - `chore:` — maintenance tasks
+  - `test:` — test additions or corrections
+  - `perf:` — performance improvements
+  - `revert:` — code reverts
+  - `style:` — code formatting and style
+- Use branch naming convention: `feature/`, `bugfix/`, `fix/`, `hotfix/`, `release/`, `chore/`, `docs/`, `refactor/`, `test/`, `build/`, `ci/`, `perf/`, `revert/`
+- Ensure your code passes all CI checks (YAML lint, Ansible lint, Molecule tests)
+- Centralized workflows from [github-workflows](https://github.com/grzegorzfranus/github-workflows) are used to run CI/CD pipelines
+- Submit a pull request describing your changes (a template is available under `.github/PULL_REQUEST_TEMPLATE/pull_request_template.md` to help structure your PR description)
+- For major changes, please open an issue first to discuss what you would like to change (issue templates for bug reports, feature requests, and tasks are available under `.github/ISSUE_TEMPLATE/`)
 
 ## 📝 License
 
-This project is licensed under the [MIT License](LICENSE).
-
----
+This project is licensed under the Apache-2.0 License - see the LICENSE file for details.
 
 ## 👥 Author Information
 
-- **Author**: Grzegorz Franus
-- **GitHub**: [@grzegorzfranus](https://github.com/grzegorzfranus)
+This role was created by [Grzegorz Franus](https://github.com/grzegorzfranus).
