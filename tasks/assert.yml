@@ -30,12 +30,18 @@
 # 2. Network & Interface Settings
 # -----------------------------------------------------------------------------
 
-- name: WireGuard | assert | Validate wireguard_mesh_group and target host membership
+- name: WireGuard | assert | Validate wireguard_mesh_group
   ansible.builtin.assert:
     that:
       - wireguard_mesh_group is defined
       - wireguard_mesh_group is string
       - wireguard_mesh_group | length > 0
+    fail_msg: "wireguard_mesh_group must be a non-empty string"
+    success_msg: "wireguard_mesh_group validated: {{ wireguard_mesh_group }}"
+
+- name: WireGuard | assert | Validate target host membership in mesh group
+  ansible.builtin.assert:
+    that:
       - groups[wireguard_mesh_group] is defined
       - groups[wireguard_mesh_group] | length > 0
       - inventory_hostname in groups[wireguard_mesh_group]
@@ -43,6 +49,7 @@
       Host '{{ inventory_hostname }}' is not a member of mesh group '{{ wireguard_mesh_group }}' or group is empty.
       The playbook MUST target the entire mesh group (e.g. hosts: {{ wireguard_mesh_group }}).
     success_msg: "Host '{{ inventory_hostname }}' is a valid member of mesh group '{{ wireguard_mesh_group }}'"
+  when: wireguard_state | lower != 'absent'
 
 - name: WireGuard | assert | Validate wireguard_interface
   ansible.builtin.assert:
