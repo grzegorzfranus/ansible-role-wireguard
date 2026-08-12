@@ -1,6 +1,6 @@
 ---
 - name: Verify
-  hosts: all
+  hosts: instance
   become: true
   tasks:
     - name: Verify | Check /etc/wireguard directory stat

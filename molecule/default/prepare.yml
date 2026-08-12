@@ -1,6 +1,6 @@
 ---
 - name: Prepare
-  hosts: all
+  hosts: instance
   become: true
   tasks:
     - name: Ensure APT package cache is updated (Debian/Ubuntu)
