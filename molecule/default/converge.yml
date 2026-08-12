@@ -11,6 +11,7 @@
     - name: Ensure current host is added to wireguard group
       ansible.builtin.group_by:
         key: "wireguard"
+      changed_when: false
 
     - name: Add mock secondary peer to inventory group for mesh simulation
       ansible.builtin.add_host:
@@ -20,6 +21,7 @@
         wireguard_address: "10.8.0.12/24"
         wireguard_endpoint: "192.0.2.12"
         __wireguard_public_key: "pOCSkrZRwni5dyxWn1+puxPZBrRqtoyd+dwrRAn4ogk="
+      changed_when: false
   tasks:
     - name: Converge | Include WireGuard role
       ansible.builtin.include_role:
