@@ -57,7 +57,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PR_JSON=$(gh pr list --head "release-please--branches--main" --json number,headRefOid --limit 1)
+          PR_JSON=$(gh pr list --repo "${{ github.repository }}" --head "release-please--branches--main" --json number,headRefOid --limit 1)
           PR_HEAD_SHA=$(echo "$PR_JSON" | python3 -c "import sys, json; data=json.load(sys.stdin); print(data[0]['headRefOid'] if data else '')")
 
           if [[ -z "$PR_HEAD_SHA" ]]; then
