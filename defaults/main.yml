@@ -25,6 +25,10 @@
 # Valid values: present, absent
 wireguard_state: "present"
 
+# Uninstall WireGuard APT packages when wireguard_state is absent
+# Valid values: true, false
+wireguard_remove_packages: true
+
 # -----------------------------------------------------------------------------
 # 2. Network & Interface Settings
 # -----------------------------------------------------------------------------

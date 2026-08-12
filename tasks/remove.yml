@@ -39,4 +39,4 @@
   ansible.builtin.include_tasks: remove_debian.yml
   when:
     - ansible_facts['os_family'] == 'Debian'
-    - wireguard_purge_keys | bool
+    - wireguard_remove_packages | bool

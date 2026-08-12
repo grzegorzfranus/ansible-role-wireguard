@@ -14,13 +14,7 @@
     reload: true
   when: wireguard_enable_forwarding | bool
 
-- name: WireGuard | configure | Check if wg-quick tool exists for validation
-  ansible.builtin.command: "which wg-quick"
-  register: __wireguard_wg_quick_check
-  failed_when: false
-  changed_when: false
-
-- name: WireGuard | configure | Template WireGuard interface configuration (with validation)
+- name: WireGuard | configure | Template WireGuard interface configuration
   become: true
   ansible.builtin.template:
     src: wg.conf.j2
@@ -29,7 +23,20 @@
     group: root
     mode: "0600"
     backup: true
-    validate: "{{ 'wg-quick strip %s' if __wireguard_wg_quick_check.rc == 0 else omit }}"
   no_log: true
   notify:
     - WireGuard | handlers | Reload WireGuard configuration
+
+# Justification: Use shell module with process substitution to validate the rendered
+# WireGuard configuration file using wg-quick strip. Fails the play fast if syntax
+# is invalid before handlers flush.
+- name: WireGuard | configure | Validate rendered interface configuration
+  become: true
+  ansible.builtin.shell: >-
+    set -o pipefail &&
+    wg-quick strip {{ wireguard_interface }} > /dev/null
+  args:
+    executable: /bin/bash
+  changed_when: false
+  no_log: true
+  when: not ansible_check_mode

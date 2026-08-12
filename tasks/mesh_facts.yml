@@ -32,3 +32,16 @@
         {%- endif -%}
       {%- endfor -%}
       {{ peers }}
+
+- name: WireGuard | mesh_facts | Assert public key defined for every mesh peer
+  ansible.builtin.assert:
+    that:
+      - hostvars[item] is defined
+      - hostvars[item]['__wireguard_public_key'] is defined
+      - hostvars[item]['__wireguard_public_key'] is string
+      - hostvars[item]['__wireguard_public_key'] | length > 0
+    fail_msg: >-
+      Mesh peer '{{ item }}' is missing public key '__wireguard_public_key'.
+      Ensure all mesh hosts are included in the play execution.
+    success_msg: "Public key verified for peer '{{ item }}'"
+  loop: "{{ __wireguard_mesh_peers | default([]) }}"

@@ -87,6 +87,7 @@ In a full-mesh topology, every node connects directly to every other node in the
 
 - **Ansible Core**: Version `>= 2.15`
 - **Python**: Version `>= 3.9` on control node and target hosts
+- **Collections**: `ansible.utils`, `ansible.posix`
 - **Privileges**: Root privilege escalation (`become: true`) on target hosts
 - **Playbook Scope**: Playbooks executing this role **must target the entire mesh group** simultaneously (e.g., `hosts: wireguard`) so Ansible can gather facts and public keys across all nodes in the mesh.
 
@@ -176,7 +177,8 @@ AllowedIPs = 10.8.0.13/32
 | Variable | Description | Default |
 | --- | --- | --- |
 | `wireguard_state` | Target state for WireGuard installation (`present` or `absent`) | `'present'` |
-| `wireguard_purge_keys` | Purge keys and configuration directories on removal | `false` |
+| `wireguard_remove_packages` | Uninstall WireGuard packages when `wireguard_state` is `absent` | `true` |
+| `wireguard_purge_keys` | Purge key directory and main config directory on removal | `false` |
 
 ### General & Network Settings
 
@@ -197,7 +199,7 @@ AllowedIPs = 10.8.0.13/32
 | Variable | Description | Default |
 | --- | --- | --- |
 | `wireguard_use_preshared_keys` | Generate unique per-peer-pair pre-shared keys (PSK) | `true` |
-| `wireguard_regenerate_keys` | Force regeneration of target host private/public keys | `false` |
+| `wireguard_regenerate_keys` | Force regeneration of target host private/public keys and PSKs | `false` |
 
 ---
 
@@ -206,7 +208,7 @@ AllowedIPs = 10.8.0.13/32
 | Property | Value | Description |
 | --- | --- | --- |
 | **Idempotent** | Yes | Running the role multiple times produces identical state without unnecessary changes. |
-| **Atomic** | Yes | Configurations pass pre-validation (`wg-quick strip`) before being written to `/etc/wireguard`. |
+| **Atomic** | Yes | Configurations pass validation (`wg-quick strip`) post-rendering before handlers run. |
 | **Check Mode** | Supported | Supports `--check` dry-run mode without mutating target state. |
 | **Diff Mode** | Supported | Generates git-style diffs for configuration template updates. |
 | **Upgrade-Safe** | Yes | Role updates package versions without destroying host private key material. |
@@ -250,7 +252,7 @@ ping -c 3 10.8.0.12
 - **Per-Pair Pre-Shared Keys**: Generates unique PSKs per peer host pair (`wg genpsk`), adding post-quantum symmetric encryption defense-in-depth.
 - **Strict AllowedIPs Boundaries**: Restricts peer `AllowedIPs` strictly to that peer's `/32` address, preventing unwanted routing or traffic spoofing.
 - **Disabled Forwarding by Default**: `wireguard_enable_forwarding` defaults to `false`, preventing nodes from acting as unintentional transit routers.
-- **Atomic Pre-Apply Validation**: Validates rendered configurations with `wg-quick strip` prior to atomic deployment.
+- **Post-Render Validation**: Validates rendered configurations with `wg-quick strip` prior to handler execution.
 - **Firewall Requirements**: Ensure UDP port `51820` (or `wireguard_port`) is open on ingress firewalls (e.g. `ufw allow 51820/udp` or `nftables`/`iptables`).
 
 ---
@@ -266,6 +268,7 @@ To cleanly uninstall WireGuard and remove configuration files from target nodes,
   become: true
   vars:
     wireguard_state: "absent"
+    wireguard_remove_packages: true
     wireguard_purge_keys: true
   roles:
     - role: grzegorzfranus.wireguard

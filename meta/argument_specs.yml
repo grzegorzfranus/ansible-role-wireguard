@@ -18,6 +18,11 @@ argument_specs:
           - absent
         default: present
 
+      wireguard_remove_packages:
+        description: Uninstall WireGuard packages when wireguard_state is absent
+        type: bool
+        default: true
+
       wireguard_mesh_group:
         description: Inventory group name whose members form the WireGuard mesh network
         type: str

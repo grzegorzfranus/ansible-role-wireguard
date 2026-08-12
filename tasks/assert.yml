@@ -18,18 +18,31 @@
     fail_msg: "wireguard_state must be 'present' or 'absent'"
     success_msg: "wireguard_state validated: {{ wireguard_state }}"
 
+- name: WireGuard | assert | Validate wireguard_remove_packages
+  ansible.builtin.assert:
+    that:
+      - wireguard_remove_packages is defined
+      - wireguard_remove_packages is boolean
+    fail_msg: "wireguard_remove_packages must be a boolean (true or false)"
+    success_msg: "wireguard_remove_packages validated: {{ wireguard_remove_packages }}"
+
 # -----------------------------------------------------------------------------
 # 2. Network & Interface Settings
 # -----------------------------------------------------------------------------
 
-- name: WireGuard | assert | Validate wireguard_mesh_group
+- name: WireGuard | assert | Validate wireguard_mesh_group and target host membership
   ansible.builtin.assert:
     that:
       - wireguard_mesh_group is defined
       - wireguard_mesh_group is string
       - wireguard_mesh_group | length > 0
-    fail_msg: "wireguard_mesh_group must be a non-empty string"
-    success_msg: "wireguard_mesh_group validated: {{ wireguard_mesh_group }}"
+      - groups[wireguard_mesh_group] is defined
+      - groups[wireguard_mesh_group] | length > 0
+      - inventory_hostname in groups[wireguard_mesh_group]
+    fail_msg: >-
+      Host '{{ inventory_hostname }}' is not a member of mesh group '{{ wireguard_mesh_group }}' or group is empty.
+      The playbook MUST target the entire mesh group (e.g. hosts: {{ wireguard_mesh_group }}).
+    success_msg: "Host '{{ inventory_hostname }}' is a valid member of mesh group '{{ wireguard_mesh_group }}'"
 
 - name: WireGuard | assert | Validate wireguard_interface
   ansible.builtin.assert:
@@ -67,6 +80,14 @@
       - wireguard_address is match('^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/[0-9]{1,2}$')
     fail_msg: "wireguard_address must be defined per host as a valid CIDR string (e.g. '10.8.0.11/24')"
     success_msg: "wireguard_address validated for {{ inventory_hostname }}: {{ wireguard_address }}"
+  when: wireguard_state | lower != 'absent'
+
+- name: WireGuard | assert | Validate wireguard_address is inside wireguard_network
+  ansible.builtin.assert:
+    that:
+      - wireguard_address | ansible.utils.ipaddr(wireguard_network)
+    fail_msg: "wireguard_address ({{ wireguard_address }}) is not inside wireguard_network ({{ wireguard_network }})"
+    success_msg: "wireguard_address {{ wireguard_address }} is inside subnet {{ wireguard_network }}"
   when: wireguard_state | lower != 'absent'
 
 - name: WireGuard | assert | Validate wireguard_endpoint
