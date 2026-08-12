@@ -2,7 +2,7 @@
 
 | Source | Version | CI | License |
 | --- | --- | --- | --- |
-| [![Source Code](https://img.shields.io/badge/source-github-blue.svg)](https://github.com/grzegorzfranus/ansible-role-wireguard) | [![Version](https://img.shields.io/github/v/release/grzegorzfranus/ansible-role-wireguard)](https://github.com/grzegorzfranus/ansible-role-wireguard/releases) | [![CI](https://github.com/grzegorzfranus/ansible-role-wireguard/actions/workflows/ci.yml/badge.svg)](https://github.com/grzegorzfranus/ansible-role-wireguard/actions/workflows/ci.yml) | [![License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE) |
+| [![Source Code](https://img.shields.io/badge/source-github-blue.svg)](https://github.com/grzegorzfranus/ansible-role-wireguard) | [![Version](https://img.shields.io/github/v/release/grzegorzfranus/ansible-role-wireguard)](https://github.com/grzegorzfranus/ansible-role-wireguard/releases) | [![CI](https://github.com/grzegorzfranus/ansible-role-wireguard/actions/workflows/ci.yml/badge.svg)](https://github.com/grzegorzfranus/ansible-role-wireguard/actions/workflows/ci.yml) | [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE) |
 
 An enterprise-grade, production-ready Ansible role to install and configure [WireGuard](https://www.wireguard.com/) on Ubuntu and Debian distributions via native APT packages. This role automates the build of a full-mesh Virtual Private Network (VPN) topology across all hosts of an inventory group, ensuring encrypted point-to-point communication between every pair of nodes with host-isolated private keys and unique per-peer-pair pre-shared keys (PSK).
 
@@ -326,45 +326,49 @@ For nodes behind NAT gateways or stateful firewalls, set `wireguard_persistent_k
 
 ```text
 ansible-role-wireguard/
-├── .ansible-lint
-├── .gitignore
-├── .release-please-manifest.json
-├── .yamllint
-├── CHANGELOG.md
-├── LICENSE
-├── README.md
+├── .github/
+│   ├── ISSUE_TEMPLATE/          # Issue report templates (bug, feature, task)
+│   │   ├── bug_report.yml
+│   │   ├── config.yml
+│   │   ├── feature_request.yml
+│   │   └── task.yml
+│   ├── PULL_REQUEST_TEMPLATE/    # Pull request description template
+│   │   └── pull_request_template.md
+│   ├── workflows/               # Centralized GitHub Actions CI/CD workflows
+│   │   ├── ci.yml
+│   │   └── release.yml
+│   └── dependabot.yml           # Dependabot configuration for GitHub Actions
 ├── defaults/
-│   └── main.yml
+│   └── main.yml                 # Default configuration variables
 ├── handlers/
-│   └── main.yml
+│   └── main.yml                 # Dynamic reload and service restart handlers
 ├── meta/
-│   ├── argument_specs.yml
-│   └── main.yml
-├── molecule/
-│   └── default/
+│   ├── main.yml                 # Role metadata and Galaxy specifications
+│   └── argument_specs.yml       # Native argument specification validation
+├── molecule/                    # Molecule testing framework
+│   └── default/                 # Default testing scenario
 │       ├── converge.yml
 │       ├── molecule.yml
 │       ├── prepare.yml
 │       └── verify.yml
-├── release-please-config.json
 ├── tasks/
-│   ├── assert.yml
-│   ├── configure.yml
-│   ├── install.yml
-│   ├── install_debian.yml
-│   ├── keys.yml
-│   ├── main.yml
-│   ├── mesh_facts.yml
-│   ├── prerequisites.yml
-│   ├── prerequisites_debian.yml
-│   ├── remove.yml
-│   ├── remove_debian.yml
-│   └── service.yml
+│   ├── main.yml                 # Main task orchestration
+│   ├── assert.yml               # Preflight parameter assertions
+│   ├── prerequisites.yml        # OS-family prerequisites dispatcher
+│   ├── prerequisites_debian.yml # APT repository prerequisites (Debian/Ubuntu)
+│   ├── install.yml              # Package installation dispatcher
+│   ├── install_debian.yml       # APT package installation (Debian/Ubuntu)
+│   ├── keys.yml                 # Host keypair & per-pair PSK management
+│   ├── mesh_facts.yml           # Full-mesh topology discovery & key exchange
+│   ├── configure.yml            # WireGuard configuration deployment
+│   ├── service.yml              # Service state management
+│   ├── remove.yml               # Removal dispatcher
+│   └── remove_debian.yml        # APT package removal (Debian/Ubuntu)
 ├── templates/
-│   └── wg.conf.j2
+│   └── wg.conf.j2               # Main WireGuard interface configuration template
 └── vars/
-    ├── debian.yml
-    └── main.yml
+    ├── main.yml                 # Internal constants
+    └── debian.yml               # Debian/Ubuntu OS package definitions
 ```
 
 ---
@@ -428,21 +432,33 @@ all:
           wireguard_persistent_keepalive: 25
 ```
 
----
-
 ## 🤝 Contributing
 
-Contributions are welcome! Please adhere to Conventional Commit guidelines (`feat:`, `fix:`, `docs:`, `ci:`) and create feature branches matching `feature/<description>` before opening a pull request.
+Contributions, bug reports, and feature requests are welcome!
 
----
+- Fork the repository and create your branch from `main`
+- Use [Conventional Commits](https://www.conventionalcommits.org/) for commit messages:
+  - `feat:` — new features
+  - `fix:` — bug fixes
+  - `refactor:` — code refactoring
+  - `docs:` — documentation changes
+  - `ci:` — CI/CD pipeline updates
+  - `build:` — dependency and build configuration updates
+  - `chore:` — maintenance tasks
+  - `test:` — test additions or corrections
+  - `perf:` — performance improvements
+  - `revert:` — code reverts
+  - `style:` — code formatting and style
+- Use branch naming convention: `feature/`, `bugfix/`, `fix/`, `hotfix/`, `release/`, `chore/`, `docs/`, `refactor/`, `test/`, `build/`, `ci/`, `perf/`, `revert/`
+- Ensure your code passes all CI checks (YAML lint, Ansible lint, Molecule tests)
+- Centralized workflows from [github-workflows](https://github.com/grzegorzfranus/github-workflows) are used to run CI/CD pipelines
+- Submit a pull request describing your changes (a template is available under `.github/PULL_REQUEST_TEMPLATE/pull_request_template.md` to help structure your PR description)
+- For major changes, please open an issue first to discuss what you would like to change (issue templates for bug reports, feature requests, and tasks are available under `.github/ISSUE_TEMPLATE/`)
 
 ## 📝 License
 
-This project is licensed under the [MIT License](LICENSE).
-
----
+This project is licensed under the Apache-2.0 License - see the LICENSE file for details.
 
 ## 👥 Author Information
 
-- **Author**: Grzegorz Franus
-- **GitHub**: [@grzegorzfranus](https://github.com/grzegorzfranus)
+This role was created by [Grzegorz Franus](https://github.com/grzegorzfranus).

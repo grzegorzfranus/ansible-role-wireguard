@@ -118,6 +118,13 @@
     success_msg: "wireguard_endpoint validated for {{ inventory_hostname }}: {{ wireguard_endpoint }}"
   when: wireguard_state | lower != 'absent'
 
+- name: WireGuard | assert | Validate wireguard_mtu
+  ansible.builtin.assert:
+    that:
+      - wireguard_mtu is none or (wireguard_mtu | int >= 1280 and wireguard_mtu | int <= 1500)
+    fail_msg: "wireguard_mtu must be null (none) or an integer between 1280 and 1500"
+    success_msg: "wireguard_mtu validated: {{ wireguard_mtu }}"
+
 - name: WireGuard | assert | Validate wireguard_persistent_keepalive
   ansible.builtin.assert:
     that:
