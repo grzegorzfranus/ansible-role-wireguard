@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/grzegorzfranus/ansible-role-wireguard/compare/v1.2.0...v1.2.1) (2026-08-13)
+
+
+### Bug Fixes
+
+* correct logging module load order, CI coverage and logrotate conflict ([#15](https://github.com/grzegorzfranus/ansible-role-wireguard/issues/15)) ([8f41c2a](https://github.com/grzegorzfranus/ansible-role-wireguard/commit/8f41c2aa5014a998192acfa8a6d578e81a15a515))
+
 ## [1.2.0](https://github.com/grzegorzfranus/ansible-role-wireguard/compare/v1.1.1...v1.2.0) (2026-08-12)
 
 
