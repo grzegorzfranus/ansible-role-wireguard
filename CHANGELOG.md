@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.3](https://github.com/grzegorzfranus/ansible-role-wireguard/compare/v1.2.2...v1.2.3) (2026-08-13)
+
+
+### CI/CD
+
+* track reusable workflows on main branch instead of pinned tag ([#21](https://github.com/grzegorzfranus/ansible-role-wireguard/issues/21)) ([1d26550](https://github.com/grzegorzfranus/ansible-role-wireguard/commit/1d26550cb06993992a9382dd23518b8d67bc6988))
+
 ## [1.2.2](https://github.com/grzegorzfranus/ansible-role-wireguard/compare/v1.2.1...v1.2.2) (2026-08-13)
 
 
