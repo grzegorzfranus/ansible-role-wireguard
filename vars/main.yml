@@ -25,3 +25,9 @@ __wireguard_dyndbg_control_file: "/proc/dynamic_debug/control"
 
 # Name of the systemd unit for periodic WireGuard status snapshots
 __wireguard_status_unit_name: "wireguard-status"
+
+# Full path to the WireGuard CLI binary
+__wireguard_wg_binary: "/usr/bin/wg"
+
+# Full path to the systemctl command binary
+__wireguard_systemctl_binary: "/usr/bin/systemctl"

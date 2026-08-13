@@ -5,15 +5,16 @@
 # =============================================================================
 ---
 - name: WireGuard | logging | Dispatch OS specific logging tasks
-  ansible.builtin.include_tasks: logging_debian.yml
+  ansible.builtin.include_tasks:
+    file: logging_debian.yml
+  args:
+    apply:
+      tags: [logging, configure]
   when: ansible_facts['os_family'] == 'Debian'
+  tags: [logging, configure]
 
-# noqa: command-instead-of-module
-- name: WireGuard | logging | Check rsyslog availability when auto-install is disabled
-  ansible.builtin.command: "systemctl list-unit-files rsyslog.service"
-  register: __wireguard_rsyslog_unit_check
-  failed_when: false
-  changed_when: false
+- name: WireGuard | logging | Gather service facts for rsyslog availability check
+  ansible.builtin.service_facts:
   when: not wireguard_install_rsyslog | bool
 
 - name: WireGuard | logging | Fail if rsyslog is not installed and auto-install is disabled
@@ -21,7 +22,7 @@
     msg: "rsyslog is required when wireguard_configure_logging is enabled. Install it manually or set wireguard_install_rsyslog: true."
   when:
     - not wireguard_install_rsyslog | bool
-    - "'rsyslog.service' not in __wireguard_rsyslog_unit_check.stdout | default('')"
+    - ansible_facts['services']['rsyslog.service'] is not defined
 
 - name: WireGuard | logging | Ensure log directory exists
   become: true
@@ -104,6 +105,18 @@
   when:
     - wireguard_enable_kernel_debug_logging | bool
     - wireguard_kernel_debug_persistent | bool
+
+# Justification: Explicitly attempt to load wireguard kernel module before checking dyndbg control.
+# Ensures dyndbg can be configured on initial run or container environments where module is not pre-loaded.
+- name: WireGuard | logging | Explicitly load wireguard kernel module for dynamic debug check
+  become: true
+  ansible.builtin.command: "modprobe wireguard"
+  register: __wireguard_modprobe_result
+  failed_when: false
+  changed_when: false
+  when:
+    - wireguard_enable_kernel_debug_logging | bool
+    - not ansible_check_mode
 
 - name: WireGuard | logging | Check if dynamic debug control interface exists
   ansible.builtin.stat:

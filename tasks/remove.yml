@@ -69,6 +69,27 @@
     path: "/etc/logrotate.d/wireguard"
     state: absent
 
+- name: WireGuard | remove | Check if dynamic debug control interface exists
+  ansible.builtin.stat:
+    path: "{{ __wireguard_dyndbg_control_file }}"
+  register: __wireguard_remove_dyndbg_control_stat
+
+- name: WireGuard | remove | Check if wireguard kernel module is loaded
+  ansible.builtin.stat:
+    path: "/sys/module/wireguard"
+  register: __wireguard_remove_dyndbg_module_stat
+
+# Justification: Disable runtime kernel dynamic debug for wireguard module before removing modprobe config file.
+# Ensures debug messages stop streaming to kern.log immediately without requiring a module reload.
+- name: WireGuard | remove | Disable runtime kernel dynamic debug for wireguard module
+  become: true
+  ansible.builtin.shell: "echo 'module wireguard -p' > {{ __wireguard_dyndbg_control_file }}"
+  changed_when: true
+  when:
+    - not ansible_check_mode
+    - __wireguard_remove_dyndbg_control_stat.stat.exists | default(false)
+    - __wireguard_remove_dyndbg_module_stat.stat.exists | default(false)
+
 - name: WireGuard | remove | Remove modprobe dynamic debug configuration file
   become: true
   ansible.builtin.file:
