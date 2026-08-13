@@ -203,13 +203,43 @@
     validate: "logrotate -d %s"
   when: wireguard_logrotate_options.enabled | bool
 
-- name: WireGuard | logging | Display logging configuration summary
-  ansible.builtin.debug:
-    msg:
-      - "WireGuard dedicated logging configured successfully."
-      - "Log directory: {{ wireguard_log_dir }}"
-      - "Primary log file: {{ wireguard_log_file }}"
-      - "Status snapshot file: {{ wireguard_status_snapshot_file if wireguard_enable_status_snapshot else 'disabled' }}"
-      - "Rsyslog config: /etc/rsyslog.d/{{ wireguard_rsyslog_config_file }}"
-      - "Logrotate config: /etc/logrotate.d/wireguard"
-    verbosity: 1
+- name: WireGuard | logging | Report kernel dynamic debug state
+  vars:
+    __wireguard_dyndbg_enabled: "{{ wireguard_enable_kernel_debug_logging | bool }}"
+    __wireguard_dyndbg_module_loaded: "{{ __wireguard_dyndbg_module_stat.stat.exists | default(false) }}"
+    __wireguard_dyndbg_modprobe_ok: "{{ __wireguard_modprobe_result.rc | default(0) == 0 }}"
+    __wireguard_dyndbg_control_exists: "{{ __wireguard_dyndbg_control_stat.stat.exists | default(false) }}"
+    __wireguard_dyndbg_active: >-
+      {{ (wireguard_enable_kernel_debug_logging | bool)
+         and (__wireguard_dyndbg_module_stat.stat.exists | default(false))
+         and (__wireguard_modprobe_result.rc | default(0) == 0)
+         and (__wireguard_dyndbg_control_stat.stat.exists | default(false)) }}
+    __wireguard_dyndbg_status_msg: >-
+      {% if not __wireguard_dyndbg_enabled %}
+      Kernel dyndbg: disabled by configuration
+      {% elif not __wireguard_dyndbg_module_loaded or not __wireguard_dyndbg_modprobe_ok %}
+      Kernel dyndbg: NOT ACTIVE (wireguard module not loaded)
+      {% elif not __wireguard_dyndbg_control_exists %}
+      Kernel dyndbg: NOT ACTIVE (dynamic debug control interface unavailable)
+      {% else %}
+      Kernel dyndbg: active
+      {% endif %}
+  block:
+    - name: WireGuard | logging | Display logging configuration summary
+      ansible.builtin.debug:
+        msg:
+          - "WireGuard dedicated logging configuration applied."
+          - "Log directory: {{ wireguard_log_dir }}"
+          - "Primary log file: {{ wireguard_log_file }}"
+          - "Status snapshot file: {{ wireguard_status_snapshot_file if wireguard_enable_status_snapshot else 'disabled' }}"
+          - "Rsyslog config: /etc/rsyslog.d/{{ wireguard_rsyslog_config_file }}"
+          - "Logrotate config: /etc/logrotate.d/wireguard"
+          - "{{ __wireguard_dyndbg_status_msg | trim }}"
+        verbosity: 1
+
+    - name: WireGuard | logging | Warn if kernel dynamic debug is not active
+      ansible.builtin.debug:
+        msg: "WARNING: {{ __wireguard_dyndbg_status_msg | trim }}"
+      when:
+        - wireguard_enable_kernel_debug_logging | bool
+        - not __wireguard_dyndbg_active | bool

@@ -158,3 +158,27 @@
           - __v_timer_unit_stat.stat.mode == '0644'
         fail_msg: "/etc/systemd/system/wireguard-status.timer unit missing or has invalid permissions"
         success_msg: "/etc/systemd/system/wireguard-status.timer unit exists with mode 0644"
+
+    - name: Verify | Check WireGuard kernel module stat for dyndbg verification
+      ansible.builtin.stat:
+        path: /sys/module/wireguard
+      register: __v_dyndbg_module_stat
+
+    - name: Verify | Check dynamic debug control interface stat for dyndbg verification
+      ansible.builtin.stat:
+        path: /proc/dynamic_debug/control
+      register: __v_dyndbg_control_stat
+
+    - name: Verify | Assert dyndbg status in container environment matches expected NOT ACTIVE state
+      vars:
+        __v_dyndbg_enabled: "{{ wireguard_enable_kernel_debug_logging | default(true) | bool }}"
+        __v_dyndbg_active: >-
+          {{ (__v_dyndbg_enabled | bool)
+             and (__v_dyndbg_module_stat.stat.exists | bool)
+             and (__v_dyndbg_control_stat.stat.exists | bool) }}
+      ansible.builtin.assert:
+        that:
+          - __v_dyndbg_enabled | bool
+          - not __v_dyndbg_active | bool
+        fail_msg: "Dynamic debug state assertion failed in container test environment"
+        success_msg: "Dynamic debug state verified as NOT ACTIVE in container test environment as expected"
