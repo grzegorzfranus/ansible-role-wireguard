@@ -1,11 +1,16 @@
 #jinja2: trim_blocks: True, lstrip_blocks: True
 {{ ansible_managed | comment }}
+# Rationale: rsyslog keeps an open file descriptor to log files. When copytruncate is enabled,
+# logrotate truncates the file in-place, eliminating the race condition of writing to a moved inode
+# without needing 'create' or a postrotate rsyslog daemon reload.
+# When copytruncate is disabled, 'create' and a postrotate rsyslog reload are required.
 {{ wireguard_log_file }}
 {{ wireguard_status_snapshot_file }} {
     {{ wireguard_logrotate_options.frequency }}
     rotate {{ wireguard_logrotate_options.rotate_count }}
 {% if wireguard_logrotate_options.compress | bool %}
     compress
+    delaycompress
 {% else %}
     nocompress
 {% endif %}
@@ -16,6 +21,8 @@
 {% endif %}
 {% if wireguard_logrotate_options.copytruncate | bool %}
     copytruncate
+{% else %}
+    create {{ wireguard_log_file_permissions }} {{ wireguard_log_user }} {{ wireguard_log_group }}
 {% endif %}
 {% if wireguard_logrotate_options.dateext | bool %}
     dateext
@@ -24,11 +31,12 @@
     dateformat {{ wireguard_logrotate_options.dateformat }}
 {% endif %}
     missingok
-    create {{ wireguard_log_file_permissions }} {{ wireguard_log_user }} {{ wireguard_log_group }}
 {% if wireguard_logrotate_options.olddir is defined and wireguard_logrotate_options.olddir | length > 0 %}
     olddir {{ wireguard_logrotate_options.olddir }}
 {% endif %}
+{% if not (wireguard_logrotate_options.copytruncate | bool) %}
     postrotate
-        /usr/bin/systemctl reload rsyslog > /dev/null 2>&1 || true
+        {{ __wireguard_systemctl_binary }} reload rsyslog > /dev/null 2>&1 || true
     endscript
+{% endif %}
 }

@@ -280,7 +280,7 @@ sudo grep wireguard /proc/dynamic_debug/control
 - **Host-Local Private Keys**: Generated on target hosts using `wg genkey` with strict `0700`/`0600` permissions. Private keys never leave the node.
 - **Sensitive Parameter Masking**: All tasks reading or processing key material enforce `no_log: true` to prevent secrets leakage in CI/CD logs.
 - **Per-Pair Pre-Shared Keys**: Generates unique PSKs per peer host pair (`wg genpsk`), adding post-quantum symmetric encryption defense-in-depth.
-- **Kernel Debug Privacy**: Dynamic debug (`dyndbg`) logs peer endpoints, handshakes, and public keys to system logs for debugging, but **NEVER logs host private keys**.
+- **Kernel Debug Privacy**: Dynamic debug (`dyndbg`) logs peer indices and endpoint addresses to system logs for debugging, but **NEVER logs host private keys**.
 - **Restricted Log File Permissions**: Dedicated log files and directories are created with `0750`/`0640` permissions owned by `root:adm`.
 - **Clean Artifact Purging**: When `wireguard_state: absent` and `wireguard_purge_logs: true`, all log files and archive directories are safely purged.
 
@@ -333,6 +333,29 @@ sudo modprobe wireguard
 - **Check Modprobe Options**: Confirm modprobe options are present (`cat /etc/modprobe.d/wireguard.conf`).
 - **Check Dynamic Debug Control**: Verify `=p` is set for wireguard in `/proc/dynamic_debug/control` (`grep wireguard /proc/dynamic_debug/control`).
 - **Check Rsyslog Status**: Confirm rsyslog service is running and active (`systemctl status rsyslog`).
+
+#### `wg-quick` events do not appear in log file
+
+The rsyslog rule `$programname == "wg-quick"` relies on `systemd-journald` forwarding messages to `syslog` (`ForwardToSyslog`). Default `journald` settings vary across distributions and systemd versions.
+
+**Diagnostic steps**:
+
+```bash
+systemctl show systemd-journald -p Environment
+grep -r ForwardToSyslog /etc/systemd/journald.conf /etc/systemd/journald.conf.d/
+journalctl -u wg-quick@wg0 --no-pager -n 20
+```
+
+**Workaround**:
+
+Set `ForwardToSyslog=yes` in `/etc/systemd/journald.conf.d/forward.conf`:
+
+```ini
+[Journal]
+ForwardToSyslog=yes
+```
+
+*Note: Kernel dynamic debug (`dyndbg`) events reach rsyslog directly via `imklog` independently of journald settings.*
 
 ---
 
@@ -422,7 +445,7 @@ Runs on every Pull Request in a two-tier gate pattern:
 4. **Ansible Lint** — checks Ansible best practices and role standards
 5. **Galaxy Metadata Validation** — verifies `meta/main.yml` schema and requirements (`ansible-meta-validate.yml`)
 6. **Security Scanning** — TruffleHog secret detection and Trivy IaC scanning (`ansible-security.yml`)
-7. **Molecule Integration Tests** — executes Molecule test matrix across supported distros (`ansible-molecule.yml`)
+7. **Molecule Integration Tests** — executes Molecule test matrix (`default` and `logging` scenarios) across supported distros (`ansible-molecule.yml`)
 8. **Merge Check Gate** — single authoritative status check aggregating all results for branch protection
 
 ### Release & Publish Pipeline (`ansible-publish.yml`)

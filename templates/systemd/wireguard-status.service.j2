@@ -2,8 +2,9 @@
 {{ ansible_managed | comment }}
 [Unit]
 Description=WireGuard Status Snapshot Service
-After=network.target
+After=network.target {{ __wireguard_service_name }}.service
+ConditionPathExists=/sys/module/wireguard
 
 [Service]
 Type=oneshot
-ExecStart=/bin/sh -c 'echo "=== $(date -u --iso-8601=seconds) ===" >> {{ wireguard_status_snapshot_file }} && /usr/bin/wg show all dump >> {{ wireguard_status_snapshot_file }}'
+ExecStart=/bin/sh -c 'echo "=== $(date -u --iso-8601=seconds) ===" >> {{ wireguard_status_snapshot_file }} && {{ __wireguard_wg_binary }} show all dump >> {{ wireguard_status_snapshot_file }}'

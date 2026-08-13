@@ -95,7 +95,7 @@ jobs:
     uses: grzegorzfranus/github-workflows/.github/workflows/ansible-ci.yml@v3.1.2
     with:
       molecule-distros: '["ubuntu2604","ubuntu2404","debian13","debian12"]'
-      molecule-scenarios: '["default"]'
+      molecule-scenarios: '["default","logging"]'
 
   # ---------------------------------------------------------------------------
   # Job 4: Merge Check Gate

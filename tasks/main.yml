@@ -2,7 +2,7 @@
 # Ansible Role: WireGuard - Tasks: Main Orchestrator
 # =============================================================================
 # Main task entrypoint routing execution phases based on wireguard_state.
-# Flow: include_vars -> assert -> prerequisites -> install -> keys -> mesh_facts -> configure -> service -> remove
+# Flow: include_vars -> assert -> prerequisites -> install -> keys -> mesh_facts -> configure -> service -> logging -> remove
 # =============================================================================
 ---
 - name: WireGuard | main | Gather OS specific variables
@@ -50,17 +50,17 @@
   when: wireguard_state | lower != 'absent'
   tags: [configure]
 
+- name: WireGuard | main | Manage WireGuard service state
+  ansible.builtin.import_tasks: service.yml
+  when: wireguard_state | lower != 'absent'
+  tags: [service]
+
 - name: WireGuard | main | Configure dedicated logging
   ansible.builtin.import_tasks: logging.yml
   when:
     - wireguard_state | lower != 'absent'
     - wireguard_configure_logging | bool
   tags: [logging, configure]
-
-- name: WireGuard | main | Manage WireGuard service state
-  ansible.builtin.import_tasks: service.yml
-  when: wireguard_state | lower != 'absent'
-  tags: [service]
 
 - name: WireGuard | main | Remove WireGuard service and configuration
   ansible.builtin.import_tasks: remove.yml
