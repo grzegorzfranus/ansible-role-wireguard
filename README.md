@@ -433,7 +433,7 @@ Use `--tags` to run selective parts of the role.
 
 ## CI/CD Pipeline
 
-This repository uses centralized, reusable GitHub Actions workflows from [github-workflows](https://github.com/grzegorzfranus/github-workflows) (`v3.1.2`) for quality assurance, security scanning, and release automation.
+This repository uses centralized, reusable GitHub Actions workflows from [github-workflows](https://github.com/grzegorzfranus/github-workflows) (`@main`) for quality assurance, security scanning, and release automation.
 
 ### CI Pipeline (`ansible-ci.yml`)
 
