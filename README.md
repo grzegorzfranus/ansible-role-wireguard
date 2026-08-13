@@ -341,7 +341,7 @@ The rsyslog rule `$programname == "wg-quick"` relies on `systemd-journald` forwa
 **Diagnostic steps**:
 
 ```bash
-systemctl show systemd-journald -p Environment
+systemd-analyze cat-config systemd/journald.conf | grep -i forwardtosyslog
 grep -r ForwardToSyslog /etc/systemd/journald.conf /etc/systemd/journald.conf.d/
 journalctl -u wg-quick@wg0 --no-pager -n 20
 ```
