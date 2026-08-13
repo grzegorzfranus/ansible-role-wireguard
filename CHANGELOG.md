@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/grzegorzfranus/ansible-role-wireguard/compare/v1.2.1...v1.2.2) (2026-08-13)
+
+
+### Bug Fixes
+
+* report actual dyndbg state and correct journald diagnostic command ([#18](https://github.com/grzegorzfranus/ansible-role-wireguard/issues/18)) ([43014d0](https://github.com/grzegorzfranus/ansible-role-wireguard/commit/43014d03b94d473d9903a23d6dd2d605c88f24ea))
+
 ## [1.2.1](https://github.com/grzegorzfranus/ansible-role-wireguard/compare/v1.2.0...v1.2.1) (2026-08-13)
 
 
