@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/grzegorzfranus/ansible-role-wireguard/compare/v1.2.3...v1.3.0) (2026-08-31)
+
+
+### Features
+
+* **wireguard:** render peer-advertised routed networks in AllowedIPs ([#23](https://github.com/grzegorzfranus/ansible-role-wireguard/issues/23)) ([#24](https://github.com/grzegorzfranus/ansible-role-wireguard/issues/24)) ([efb6c7f](https://github.com/grzegorzfranus/ansible-role-wireguard/commit/efb6c7fbf8eaddfec01eb83dcc5678145555ca17))
+
 ## [1.2.3](https://github.com/grzegorzfranus/ansible-role-wireguard/compare/v1.2.2...v1.2.3) (2026-08-13)
 
 
