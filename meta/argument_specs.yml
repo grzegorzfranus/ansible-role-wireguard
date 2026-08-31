@@ -81,6 +81,12 @@ argument_specs:
         type: bool
         default: false
 
+      wireguard_routed_networks:
+        description: Additional CIDR networks this host routes for the mesh, appended by peers to its AllowedIPs
+        type: list
+        elements: str
+        default: []
+
       wireguard_configure_logging:
         description: Master toggle to enable dedicated WireGuard logging with rsyslog and status snapshots
         type: bool

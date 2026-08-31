@@ -22,6 +22,26 @@
     fail_msg: "Duplicate wireguard_address detected in mesh group '{{ wireguard_mesh_group }}'"
     success_msg: "All wireguard_address values across mesh group are unique."
 
+- name: WireGuard | mesh_facts | Collect all advertised routed networks
+  ansible.builtin.set_fact:
+    __wireguard_all_routed_networks: >-
+      {%- set networks = [] -%}
+      {%- for host in (groups[wireguard_mesh_group] | default([inventory_hostname])) -%}
+        {%- if hostvars[host] is defined and hostvars[host]['wireguard_routed_networks'] is defined -%}
+          {%- set _ = networks.extend(hostvars[host]['wireguard_routed_networks']) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ networks }}
+
+- name: WireGuard | mesh_facts | Assert unique wireguard_routed_networks across mesh nodes
+  ansible.builtin.assert:
+    that:
+      - __wireguard_all_routed_networks | length == __wireguard_all_routed_networks | unique | length
+    fail_msg: >-
+      Duplicate routed network detected in mesh group '{{ wireguard_mesh_group }}'.
+      Each prefix must be advertised by exactly one node, otherwise WireGuard rejects the overlapping AllowedIPs.
+    success_msg: "All wireguard_routed_networks prefixes across mesh group are unique."
+
 - name: WireGuard | mesh_facts | Build mesh peer list for inventory host
   ansible.builtin.set_fact:
     __wireguard_mesh_peers: >-

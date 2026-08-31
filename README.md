@@ -164,6 +164,38 @@ Endpoint = 192.0.2.13:51820
 AllowedIPs = 10.8.0.13/32
 ```
 
+### Transit Nodes & Routed Networks
+
+By default a peer entry carries a single host route, so the mesh reaches mesh members and
+nothing else. A node that forwards traffic for an additional network on behalf of the mesh —
+for example a gateway bridging another VPN or a branch LAN into the tunnel — declares that
+network in its own host variables:
+
+```yaml
+# host_vars/gateway.example.com/wireguard.yml
+wireguard_address: "10.8.0.20/24"
+wireguard_enable_forwarding: true
+wireguard_routed_networks:
+  - "100.64.0.0/10"
+```
+
+Every other mesh node then renders that prefix into the gateway peer entry, and `wg-quick`
+installs the matching route on each of them:
+
+```ini
+[Peer]
+# Peer: gateway.example.com
+PublicKey = <PUBLIC_KEY_GATEWAY>
+Endpoint = 192.0.2.20:51820
+AllowedIPs = 10.8.0.20/32, 100.64.0.0/10
+```
+
+Two rules govern this variable. A prefix must be advertised by exactly one mesh node, because
+WireGuard cryptokey routing rejects a configuration whose peers declare overlapping
+`AllowedIPs`; the role asserts this across the mesh group at run time. The gateway itself also
+needs `wireguard_enable_forwarding: true` and a host firewall policy that permits the transit,
+neither of which follows automatically from declaring the network.
+
 ---
 
 ## 📊 Variables
@@ -190,6 +222,7 @@ AllowedIPs = 10.8.0.13/32
 | `wireguard_mtu` | Optional interface MTU size (null uses system default) | `null` |
 | `wireguard_persistent_keepalive` | Keepalive interval in seconds (0 disables keepalive) | `0` |
 | `wireguard_enable_forwarding` | Enable kernel IPv4 packet forwarding via sysctl | `false` |
+| `wireguard_routed_networks` | Extra CIDR networks this host routes for the mesh, appended by peers to its `AllowedIPs` | `[]` |
 
 ### Key Management & Security Settings
 
