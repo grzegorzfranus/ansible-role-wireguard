@@ -71,6 +71,13 @@ wireguard_persistent_keepalive: 0
 # Valid values: true, false
 wireguard_enable_forwarding: false
 
+# File the forwarding setting is persisted to when wireguard_enable_forwarding is true
+# A drop-in under /etc/sysctl.d is used rather than the module default /etc/sysctl.conf,
+# which Ubuntu 26.04 does not apply at boot: it ships no /etc/sysctl.d/99-sysctl.conf symlink,
+# so that file sits outside systemd-sysctl's search path and the value reverts on reboot.
+# Valid values: absolute file path string
+wireguard_sysctl_file: "/etc/sysctl.d/60-wireguard.conf"
+
 # Additional networks this host routes on behalf of the mesh, appended by every peer
 # to this host AllowedIPs entry. Used for transit nodes bridging another network into
 # the mesh. Each prefix must be advertised by exactly one mesh node, because overlapping

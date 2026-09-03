@@ -141,6 +141,16 @@
     fail_msg: "wireguard_enable_forwarding must be a boolean (true or false)"
     success_msg: "wireguard_enable_forwarding validated: {{ wireguard_enable_forwarding }}"
 
+- name: WireGuard | assert | Validate wireguard_sysctl_file
+  ansible.builtin.assert:
+    that:
+      - wireguard_sysctl_file is defined
+      - wireguard_sysctl_file is string
+      - wireguard_sysctl_file is match('^/')
+    fail_msg: "wireguard_sysctl_file must be an absolute file path, ideally a drop-in under /etc/sysctl.d"
+    success_msg: "wireguard_sysctl_file validated: {{ wireguard_sysctl_file }}"
+  when: wireguard_enable_forwarding | bool
+
 - name: WireGuard | assert | Validate wireguard_routed_networks
   ansible.builtin.assert:
     that:

@@ -4,11 +4,17 @@
 # Renders the WireGuard interface configuration file and manages sysctl settings.
 # =============================================================================
 ---
+# Justification for sysctl_file: the module default is /etc/sysctl.conf, which Ubuntu 26.04
+# no longer applies at boot - it ships no /etc/sysctl.d/99-sysctl.conf symlink, so the file
+# is outside systemd-sysctl's search path. With sysctl_set the value applies during the run
+# and the play reports success, then reverts on the next reboot. A drop-in under
+# /etc/sysctl.d is read on every supported distribution.
 - name: WireGuard | configure | Enable IPv4 packet forwarding
   become: true
   ansible.posix.sysctl:
     name: net.ipv4.ip_forward
     value: "1"
+    sysctl_file: "{{ wireguard_sysctl_file }}"
     sysctl_set: true
     state: present
     reload: true
