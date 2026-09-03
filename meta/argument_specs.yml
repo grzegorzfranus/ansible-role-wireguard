@@ -81,6 +81,11 @@ argument_specs:
         type: bool
         default: false
 
+      wireguard_sysctl_file:
+        description: File the IPv4 forwarding setting is persisted to, a drop-in under /etc/sysctl.d
+        type: str
+        default: /etc/sysctl.d/60-wireguard.conf
+
       wireguard_routed_networks:
         description: Additional CIDR networks this host routes for the mesh, appended by peers to its AllowedIPs
         type: list

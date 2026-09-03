@@ -222,6 +222,7 @@ neither of which follows automatically from declaring the network.
 | `wireguard_mtu` | Optional interface MTU size (null uses system default) | `null` |
 | `wireguard_persistent_keepalive` | Keepalive interval in seconds (0 disables keepalive) | `0` |
 | `wireguard_enable_forwarding` | Enable kernel IPv4 packet forwarding via sysctl | `false` |
+| `wireguard_sysctl_file` | Drop-in the forwarding setting is persisted to, so it survives a reboot | `/etc/sysctl.d/60-wireguard.conf` |
 | `wireguard_routed_networks` | Extra CIDR networks this host routes for the mesh, appended by peers to its `AllowedIPs` | `[]` |
 
 ### Key Management & Security Settings
