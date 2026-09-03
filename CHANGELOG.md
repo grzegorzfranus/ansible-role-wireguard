@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/grzegorzfranus/ansible-role-wireguard/compare/v1.3.0...v1.3.1) (2026-09-03)
+
+
+### Bug Fixes
+
+* **wireguard:** persist IPv4 forwarding to a sysctl drop-in so it survives reboot ([#26](https://github.com/grzegorzfranus/ansible-role-wireguard/issues/26)) ([#27](https://github.com/grzegorzfranus/ansible-role-wireguard/issues/27)) ([45f3c1c](https://github.com/grzegorzfranus/ansible-role-wireguard/commit/45f3c1cd5b234e2244aaefbd6d5efc9805a8767d))
+
 ## [1.3.0](https://github.com/grzegorzfranus/ansible-role-wireguard/compare/v1.2.3...v1.3.0) (2026-08-31)
 
 
