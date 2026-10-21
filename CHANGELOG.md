@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/grzegorzfranus/ansible-role-wireguard/compare/v1.3.1...v1.3.2) (2026-10-21)
+
+
+### CI/CD
+
+* **workflows:** align Dependabot, release and CI workflows with github-workflows ([#29](https://github.com/grzegorzfranus/ansible-role-wireguard/issues/29)) ([#30](https://github.com/grzegorzfranus/ansible-role-wireguard/issues/30)) ([c891589](https://github.com/grzegorzfranus/ansible-role-wireguard/commit/c891589a73c7d8a50b60d0a369460aa8e0e23743))
+
 ## [1.3.1](https://github.com/grzegorzfranus/ansible-role-wireguard/compare/v1.3.0...v1.3.1) (2026-09-03)
 
 
