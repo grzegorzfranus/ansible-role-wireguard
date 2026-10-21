@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.3](https://github.com/grzegorzfranus/ansible-role-wireguard/compare/v1.3.2...v1.3.3) (2026-10-21)
+
+
+### Documentation
+
+* **readme:** describe the current CI and release pipelines ([#32](https://github.com/grzegorzfranus/ansible-role-wireguard/issues/32)) ([#33](https://github.com/grzegorzfranus/ansible-role-wireguard/issues/33)) ([1613fd6](https://github.com/grzegorzfranus/ansible-role-wireguard/commit/1613fd69dd4734cc8ea2a11a9c9a514010cc3b02))
+
 ## [1.3.2](https://github.com/grzegorzfranus/ansible-role-wireguard/compare/v1.3.1...v1.3.2) (2026-10-21)
 
 
