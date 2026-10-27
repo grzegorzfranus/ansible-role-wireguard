@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.4](https://github.com/grzegorzfranus/ansible-role-wireguard/compare/v1.3.3...v1.3.4) (2026-10-27)
+
+
+### Bug Fixes
+
+* **logging:** let rsyslog own the WireGuard log files on Ubuntu ([#35](https://github.com/grzegorzfranus/ansible-role-wireguard/issues/35)) ([#36](https://github.com/grzegorzfranus/ansible-role-wireguard/issues/36)) ([db8567d](https://github.com/grzegorzfranus/ansible-role-wireguard/commit/db8567d95f5ae6cd74cb909dde8449e52298789d))
+
 ## [1.3.3](https://github.com/grzegorzfranus/ansible-role-wireguard/compare/v1.3.2...v1.3.3) (2026-10-21)
 
 
