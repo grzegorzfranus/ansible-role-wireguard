@@ -131,13 +131,13 @@ wireguard_log_dir_permissions: "0750"
 # Valid values: octal permission string (e.g. "0640")
 wireguard_log_file_permissions: "0640"
 
-# User owner for WireGuard log directory and log files
+# User owner for WireGuard log directory and log files (syslog on Ubuntu, root on Debian, because rsyslog writes the files)
 # Valid values: system user string (e.g. "root")
-wireguard_log_user: "root"
+wireguard_log_user: "{{ __wireguard_log_user }}"
 
-# Group owner for WireGuard log directory and log files
+# Group owner for WireGuard log directory and log files (adm)
 # Valid values: system group string (e.g. "adm")
-wireguard_log_group: "adm"
+wireguard_log_group: "{{ __wireguard_log_group }}"
 
 # Filename for rsyslog configuration fragment under /etc/rsyslog.d/
 # Valid values: filename string ending with .conf (e.g. "49-wireguard.conf")

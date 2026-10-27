@@ -31,3 +31,9 @@ __wireguard_wg_binary: "/usr/bin/wg"
 
 # Full path to the systemctl command binary
 __wireguard_systemctl_binary: "/usr/bin/systemctl"
+
+# Owner of WireGuard log files: Ubuntu's rsyslog drops privileges to syslog, Debian's rsyslog runs as root
+__wireguard_log_user: "{{ 'syslog' if ansible_facts['distribution'] == 'Ubuntu' else 'root' }}"
+
+# Group owning WireGuard log directory and files
+__wireguard_log_group: "adm"

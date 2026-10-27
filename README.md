@@ -242,8 +242,8 @@ neither of which follows automatically from declaring the network.
 | `wireguard_log_file` | Primary log file path for kernel dyndbg and wg-quick messages | `"{{ wireguard_log_dir }}/wireguard.log"` |
 | `wireguard_log_dir_permissions` | Directory octal permissions for `wireguard_log_dir` | `"0750"` |
 | `wireguard_log_file_permissions` | File octal permissions for WireGuard log files | `"0640"` |
-| `wireguard_log_user` | User owner for WireGuard log directory and files | `"root"` |
-| `wireguard_log_group` | Group owner for WireGuard log directory and files | `"adm"` |
+| `wireguard_log_user` | User owner for WireGuard log directory and files | `"{{ __wireguard_log_user }}"` (`syslog` on Ubuntu, `root` on Debian) |
+| `wireguard_log_group` | Group owner for WireGuard log directory and files | `"{{ __wireguard_log_group }}"` (`adm`) |
 | `wireguard_rsyslog_config_file` | Filename for rsyslog fragment under `/etc/rsyslog.d/` | `"49-wireguard.conf"` |
 | `wireguard_enable_kernel_debug_logging` | Enable kernel dynamic debug (`dyndbg`) for wireguard module | `true` |
 | `wireguard_kernel_debug_persistent` | Persist kernel dyndbg options via `/etc/modprobe.d/wireguard.conf` | `true` |
@@ -367,6 +367,7 @@ sudo modprobe wireguard
 - **Check Modprobe Options**: Confirm modprobe options are present (`cat /etc/modprobe.d/wireguard.conf`).
 - **Check Dynamic Debug Control**: Verify `=p` is set for wireguard in `/proc/dynamic_debug/control` (`grep wireguard /proc/dynamic_debug/control`).
 - **Check Rsyslog Status**: Confirm rsyslog service is running and active (`systemctl status rsyslog`).
+- **Check File Ownership**: rsyslog on Ubuntu runs as syslog and needs to own the directory and file (`stat -c '%U:%G %a' /var/log/wireguard /var/log/wireguard/wireguard.log`, `journalctl -u rsyslog | grep wireguard.log`).
 
 #### `wg-quick` events do not appear in log file
 

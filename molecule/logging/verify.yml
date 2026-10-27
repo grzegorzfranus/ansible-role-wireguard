@@ -109,15 +109,46 @@
       register: __v_logdir_stat
 
     - name: Verify | Assert log directory permissions and owner
+      vars:
+        __expected_log_user: "{{ 'syslog' if ansible_facts['distribution'] == 'Ubuntu' else 'root' }}"
       ansible.builtin.assert:
         that:
           - __v_logdir_stat.stat.exists | bool
           - __v_logdir_stat.stat.isdir | bool
           - __v_logdir_stat.stat.mode == '0750'
-          - __v_logdir_stat.stat.pw_name == 'root'
+          - __v_logdir_stat.stat.pw_name == __expected_log_user
           - __v_logdir_stat.stat.gr_name == 'adm'
         fail_msg: "/var/log/wireguard directory has incorrect permissions or owner/group"
-        success_msg: "/var/log/wireguard directory verified with mode 0750 root:adm"
+        success_msg: "/var/log/wireguard directory verified with mode 0750 {{ __expected_log_user }}:adm"
+
+    - name: Verify | Check wireguard.log file existence and permissions
+      ansible.builtin.stat:
+        path: /var/log/wireguard/wireguard.log
+      register: __v_logfile_stat
+
+    - name: Verify | Assert wireguard.log file permissions and owner
+      vars:
+        __expected_log_user: "{{ 'syslog' if ansible_facts['distribution'] == 'Ubuntu' else 'root' }}"
+      ansible.builtin.assert:
+        that:
+          - __v_logfile_stat.stat.exists | bool
+          - __v_logfile_stat.stat.mode == '0640'
+          - __v_logfile_stat.stat.pw_name == __expected_log_user
+          - __v_logfile_stat.stat.gr_name == 'adm'
+        fail_msg: "/var/log/wireguard/wireguard.log does not exist or has incorrect permissions/owner"
+        success_msg: "/var/log/wireguard/wireguard.log verified with mode 0640 {{ __expected_log_user }}:adm"
+
+    - name: Verify | Send log probe via logger command
+      ansible.builtin.command: "logger -t wg-quick molecule-wireguard-log-probe"
+      changed_when: false
+
+    - name: Verify | Check probe message written to wireguard.log
+      ansible.builtin.command: "grep -c molecule-wireguard-log-probe /var/log/wireguard/wireguard.log"
+      register: __v_log_probe_grep
+      until: __v_log_probe_grep.rc == 0
+      retries: 10
+      delay: 2
+      changed_when: false
 
     - name: Verify | Check status snapshot service unit existence
       ansible.builtin.stat:

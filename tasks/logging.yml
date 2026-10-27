@@ -24,6 +24,7 @@
     - not wireguard_install_rsyslog | bool
     - ansible_facts['services']['rsyslog.service'] is not defined
 
+# Rsyslog suspends the omfile action after a permission error, so an owner change needs a restart
 - name: WireGuard | logging | Ensure log directory exists
   become: true
   ansible.builtin.file:
@@ -32,6 +33,8 @@
     owner: "{{ wireguard_log_user }}"
     group: "{{ wireguard_log_group }}"
     mode: "{{ wireguard_log_dir_permissions }}"
+  notify:
+    - WireGuard | handlers | Restart rsyslog
 
 - name: WireGuard | logging | Ensure wireguard.log file exists
   become: true
@@ -43,6 +46,8 @@
     mode: "{{ wireguard_log_file_permissions }}"
     modification_time: preserve
     access_time: preserve
+  notify:
+    - WireGuard | handlers | Restart rsyslog
 
 - name: WireGuard | logging | Ensure wireguard-status.log file exists
   become: true
