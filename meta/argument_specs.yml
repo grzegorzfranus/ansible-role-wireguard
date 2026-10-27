@@ -123,14 +123,14 @@ argument_specs:
         default: "0640"
 
       wireguard_log_user:
-        description: User owner for WireGuard log files and directory
+        description: User owner for WireGuard log files and directory (syslog on Ubuntu, root on Debian)
         type: str
-        default: "root"
+        default: "{{ __wireguard_log_user }}"
 
       wireguard_log_group:
-        description: Group owner for WireGuard log files and directory
+        description: Group owner for WireGuard log files and directory (adm)
         type: str
-        default: "adm"
+        default: "{{ __wireguard_log_group }}"
 
       wireguard_rsyslog_config_file:
         description: Filename for rsyslog configuration fragment in /etc/rsyslog.d/
